@@ -11,7 +11,7 @@ def is_not_blank(s):
     return bool(s and not s.isspace())
 
 
-capture = pyshark.FileCapture("./pcaps/baseline-1.pcapng", only_summaries=False)
+capture = pyshark.FileCapture("./pcaps/test.pcapng", only_summaries=False)
 
 # Create attribute lists
 indices = []
@@ -67,4 +67,12 @@ print("Number of sources processed: " + str(len(source)))
 print("Number of destinations processed: " + str(len(destination)))
 print("Number of protocols processed: " + str(len(protocolList)))
 print("Number of lengths processed: " + str(len(packetLength)))
-print("These are all of the elements in the formatted line: \n")
+
+if False:
+    print(capture[0].data.data)
+    print(capture[1].data.data)
+    print(capture[2].data.data)
+    print(capture[3].data.data)
+    print(capture[4].data.data)
+    print(capture[5].data.data)
+    print(capture[6].data.data)
