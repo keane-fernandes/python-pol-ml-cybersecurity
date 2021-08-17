@@ -2,51 +2,83 @@ import pyshark
 import collections
 import matplotlib.pyplot as plt
 import numpy as np
+import pol_utilities as pu
 
-# Import packets from capture file (Change this to accept command
-# line arguments, basically make it more flexible)
+# Packet lists based on PolPacket class in pol_utilities
+masterPacketList = []
+vehicleSpeedPackets = []
+throttlePedalPackets = []
+brakeStatusPackets = []
+cruiseControlPackets = []
+broadcastPackets = []
+maliciousPackets = []
 
+# Behaviour Parameters
+validPackets = 0
+broadcastPackets = 0
+maliciousPackets = 0
+time = 0.0
 
-def is_not_blank(s):
-    return bool(s and not s.isspace())
+# Import packets from capture file
+capture = pyshark.FileCapture(
+    "./pcaps/test.pcapng", only_summaries=False, keep_packets=False
+)
 
-
-capture = pyshark.FileCapture("./pcaps/test.pcapng", only_summaries=False)
-
-# Create attribute lists
-indices = []
-timestamps = []
-source = []
-destination = []
-protocolList = []
-packetLength = []
-throttlePedalDemand = []
-brakeStatus = []
-
-numberOfPackets = 0
-
-# Iterate though packets and populate attribute lists
+# Iterate though packets and populate PolPacket object
 for packet in capture:
-    numberOfPackets += 1
-    line = str(packet)
-    formattedLine = line.split(" ")
-    indices.append(formattedLine[0])
-    timestamps.append(formattedLine[1])
-    source.append(formattedLine[2])
-    destination.append(formattedLine[3])
-    protocolList.append(formattedLine[4])
-    packetLength.append(formattedLine[5])
-    throttlePedalDemand.append(formattedLine[6])
-    brakeStatus.append(formattedLine[7])
+    packet_length = packet.frame_info.len
 
-counter = collections.Counter(protocolList)
+    if pu.check_for_valid(packet):
+        hexdump = packet.data.data
+        status_type = pu.compute_status_type(packet)
+        time_relative = packet.udp.time_relative
+        time_delta = packet.udp.time_delta
+        total_length = packet_length
+        udp_length = packet.udp.length
+        source_port = packet.udp.srcport
+        destination_port = packet.udp.dstport
+        source_ip = packet.ip.src
+        destination_ip = packet.ip.dst
+        keane = packet.data.ip
+        sid = "1234556"
+        iid = "1234060"
 
-# Real-time sniffing of packets
-# Specify interface to sniff on
+        # IP layer data extraction
 
+        # Ethernet layer data extraction
+
+        new_pol_pkt = pu.PolPacket(
+            hexdump,
+            status_type,
+            time_relative,
+            time_delta,
+            total_length,
+            source_port,
+            destination_port,
+            sid,
+            iid,
+            source_ip,
+            destination_ip,
+        )
+
+        masterPacketList.append(new_pol_pkt)
+        pu.PolPacket.increment_packet_counter()
+
+    elif pu.check_for_broadcast(packet):
+        pu.PolPacket.increment_packet_counter()
+        pass
+    else:
+        pu.PolPacket.increment_packet_counter()
+        pass
+
+print("Total Packets: " + str(pu.PolPacket.counter))
+print(hasattr(packet.udp, "payload"))
 
 # Plot our results
 if False:
+    for pkt in masterPacketList:
+        print(pkt.time_delta)
+
     plt.style.use("ggplot")
     y_pos = np.arange(len(list(counter.keys())))
     plt.bar(
@@ -59,20 +91,3 @@ if False:
     plt.xticks(y_pos, list(counter.keys()))
     plt.ylabel("Frequency")
     plt.show()
-
-print("Number of packets processed: " + str(numberOfPackets))
-print("Size of formatted line list: " + str(len(formattedLine)))
-print("Number of timestamps processed: " + str(len(timestamps)))
-print("Number of sources processed: " + str(len(source)))
-print("Number of destinations processed: " + str(len(destination)))
-print("Number of protocols processed: " + str(len(protocolList)))
-print("Number of lengths processed: " + str(len(packetLength)))
-
-if False:
-    print(capture[0].data.data)
-    print(capture[1].data.data)
-    print(capture[2].data.data)
-    print(capture[3].data.data)
-    print(capture[4].data.data)
-    print(capture[5].data.data)
-    print(capture[6].data.data)
