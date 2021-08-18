@@ -190,43 +190,34 @@ class PolPacket:
     counter = 0
 
     def __init__(
-        self=None,
-        hexdump=None,
+        self,
         status_type=None,
         time_relative=None,
         time_delta=None,
         total_length=None,
         source_ip=None,
         destination_ip=None,
-        sid=None,
-        iid=None,
         source_port=None,
         destination_port=None,
     ):
-        self.hexdump = hexdump
         self.status_type = status_type
         self.time_relative = time_relative
         self.time_delta = time_delta
         self.total_length = total_length  # in bytes
         self.source_ip = source_ip
         self.destination_ip = destination_ip
-        self.sid = sid
-        self.iid = iid
         self.source_port = source_port
         self.destination_port = destination_port
 
     # Provides a packet summary
     def print_summary(self):
-        print("UDP Statistics")
-        print("Hexdump: " + self.hexdump)
+        print("Packet Summary ")
         print("Status Type: " + str(self.status_type))
         print("Time Relative: " + self.time_relative)
         print("Time Delta: " + self.time_delta)
         print("Length: " + self.length)
-        print("Source Port: " + self.source_port)
-        print("Destination Port: " + self.destination_port)
-        print("SID: " + self.sid)
-        print("IID: " + self.iid)
+        print("Source IP: " + self.source_ip)
+        print("Destination IP: " + self.destination_ip)
         print("Source Port: " + self.source_port)
         print("Destination Port: " + self.destination_port)
         print("\n")

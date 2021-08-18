@@ -37,8 +37,6 @@ for packet in capture:
 
         status_type = pu.compute_status_type(sid, iid)
 
-        print(status_type)
-
         time_relative = packet.udp.time_relative
         time_delta = packet.udp.time_delta
         total_length = packet_length
@@ -47,22 +45,18 @@ for packet in capture:
         destination_port = packet.udp.dstport
         source_ip = packet.ip.src
         destination_ip = packet.ip.dst
-        hexdump = packet.data.data
 
         # IP layer data extraction
 
         # Ethernet layer data extraction
 
         new_pol_pkt = pu.PolPacket(
-            hexdump,
             status_type,
             time_relative,
             time_delta,
             total_length,
             source_port,
             destination_port,
-            sid,
-            iid,
             source_ip,
             destination_ip,
         )
@@ -77,7 +71,8 @@ for packet in capture:
         status_type = pu.compute_status_type(sid, iid)
 
         pu.PolPacket.increment_packet_counter()
-        print(status_type)
+
+    # Another elif for DHCP / SSDP
     else:
 
         pu.PolPacket.increment_packet_counter()
