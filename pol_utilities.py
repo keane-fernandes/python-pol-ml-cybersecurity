@@ -23,6 +23,10 @@ __DEFAULT_SID_START_BYTE = 52
 __DEFAULT_SID_END_BYTE = 56
 __DEFAULT_IID_START_BYTE = 56
 __DEFAULT_IID_END_BYTE = 60
+__DEFAULT_PAYLOAD_LENGTH = 8
+__DEFAULT_FALSE = "00"
+__DEFAULT_TRUE = "01"
+__DEFAULT_LENGTH = 8
 
 # Broadcast Packet
 __BROADCAST_STATUS_ID = 0
@@ -36,24 +40,29 @@ __VEHICLESPEEDSTATUS_LENGTH = 130
 __VEHICLESPEEDSTATUS_UDP_LENGTH = 96
 __VEHICLESPEEDSTATUS_SID = "aa00aba4"  # Hexadecimal
 __VEHICLESPEEDSTATUS_IID = "55005731"  # Hexadecimal
+__VEHICLESPEEDSTATUS_PAYLOAD_LENGTH = 16
+__VEHICLESPEEDSTATUS_SPEED_END_BYTE = 8
 
 # Throttle Status Packet
 __THROTTLESTATUS_STATUS_ID = 2
 __THROTTLEPEDALSTATUS_SID = "aa00aba1"  # Hexadecimal
 __THROTTLEPEDALSTATUS_IID = "5500572e"  # Hexadecimal
+__THROTTLEPEDALSTATUS_DEMAND_END_BYTE = 8
 
 # Brake Status Packet
 __BRAKESTATUS_STATUS_ID = 3
 __BRAKESTATUS_SID = "aa00abc2"  # Hexadecimal
 __BRAKESTATUS_IID = "5500574f"  # Hexadecimal
+__BRAKESTATUS_END_BYTE = 2
 
 # Cruise Control Status Packet
 __CRUISECONTROL_STATUS_ID = 4
 __CRUISECONTROLSTATUS_SID = "aa00ab9b"  # Hexadecimal
 __CRUISECONTROLSTATUS_IID = "55005728"  # Hexadecimal
+__CRUISECONTROL_END_BYTE = 8
 
 # Malicious Packet
-__MALICIOUSPACKET_STATUS = 5
+__MALICIOUSPACKET_STATUS_ID = 5
 
 # Checks that layers exist in a packet
 def check_for_layers(packet, *layers):
@@ -96,7 +105,10 @@ def compute_status_type(sid, iid):
     if sid == __CRUISECONTROLSTATUS_SID and iid == __CRUISECONTROLSTATUS_IID:
         return __CRUISECONTROL_STATUS_ID
 
-    return __MALICIOUSPACKET_STATUS
+    if sid == __BROADCAST_SID and iid == __BROADCAST_IID:
+        return __BROADCAST_STATUS_ID
+
+    return __MALICIOUSPACKET_STATUS_ID
 
 
 # Calculates the throughput of a network in packets/second
@@ -159,7 +171,42 @@ def get_broadcast_sid():
 
 
 def get_broadcast_iid():
-    return __BROADCAST_SID
+    return __BROADCAST_IID
+
+
+def extract_payload(byte_field, status_type):
+    if status_type == __VEHICLESPEEDSTATUS_STATUS_ID:
+
+        payload = extract_bytes(
+            byte_field,
+            len(byte_field) - __VEHICLESPEEDSTATUS_PAYLOAD_LENGTH,
+            len(byte_field),
+        )
+
+        speed_hex = payload[0:__VEHICLESPEEDSTATUS_SPEED_END_BYTE]
+        speed_decimal = int(speed_hex, 16)
+        return speed_decimal
+
+    payload = extract_bytes(
+        byte_field,
+        len(byte_field) - __DEFAULT_PAYLOAD_LENGTH,
+        len(byte_field),
+    )
+
+    if status_type == __THROTTLESTATUS_STATUS_ID:
+        throttle_demand_hex = payload[0:__THROTTLEPEDALSTATUS_DEMAND_END_BYTE]
+        throttle_demand_decimal = int(throttle_demand_hex, 16)
+        return throttle_demand_decimal
+
+    if status_type == __BRAKESTATUS_STATUS_ID:
+        brake_pressed_hex = payload[0:__BRAKESTATUS_END_BYTE]
+        brake_pressed_decimal = int(brake_pressed_hex, 16)
+        return brake_pressed_decimal
+
+    if status_type == __CRUISECONTROL_STATUS_ID:
+        cruise_control_hex = payload[0:__THROTTLEPEDALSTATUS_DEMAND_END_BYTE]
+        cruise_control_decimal = int(cruise_control_hex, 16)
+        return cruise_control_decimal
 
 
 # Checks if a packet matches a broadcast message sent by the input controller
@@ -191,35 +238,38 @@ class PolPacket:
 
     def __init__(
         self,
-        status_type=None,
-        time_relative=None,
-        time_delta=None,
-        total_length=None,
-        source_ip=None,
-        destination_ip=None,
-        source_port=None,
-        destination_port=None,
+        status_type=0,
+        timestamp=0,
+        time_delta=0,
+        packet_length=0,
+        source_ip="",
+        destination_ip="",
+        source_port=0,
+        destination_port=0,
+        payload=0,
     ):
         self.status_type = status_type
-        self.time_relative = time_relative
+        self.timestamp = timestamp
         self.time_delta = time_delta
-        self.total_length = total_length  # in bytes
+        self.packet_length = packet_length  # in bytes
         self.source_ip = source_ip
         self.destination_ip = destination_ip
         self.source_port = source_port
         self.destination_port = destination_port
+        self.payload = payload
 
     # Provides a packet summary
     def print_summary(self):
         print("Packet Summary ")
         print("Status Type: " + str(self.status_type))
-        print("Time Relative: " + self.time_relative)
-        print("Time Delta: " + self.time_delta)
-        print("Length: " + self.length)
+        print("Timestamp: " + str(self.timestamp))
+        print("Time Delta: " + str(self.time_delta))
+        print("Packet Length: " + str(self.packet_length))
         print("Source IP: " + self.source_ip)
         print("Destination IP: " + self.destination_ip)
-        print("Source Port: " + self.source_port)
-        print("Destination Port: " + self.destination_port)
+        print("Source Port: " + str(self.source_port))
+        print("Destination Port: " + str(self.destination_port))
+        print("Payload: " + str(self.payload))
         print("\n")
 
     @classmethod

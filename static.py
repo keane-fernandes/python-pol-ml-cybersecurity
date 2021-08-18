@@ -21,12 +21,14 @@ time = 0.0
 
 # Import packets from capture file
 capture = pyshark.FileCapture(
-    "./pcaps/baseline-1.pcapng", only_summaries=False, keep_packets=False
+    "./pcaps/test_with_broadcast.pcapng", only_summaries=False, keep_packets=False
 )
 
 # Iterate though packets and populate PolPacket object
 for packet in capture:
     packet_length = packet.frame_info.len
+    timestamp = packet.frame_info.time_relative
+    time_delta = packet.frame_info.time_delta
 
     if pu.check_for_valid(packet):
 
@@ -37,28 +39,28 @@ for packet in capture:
 
         status_type = pu.compute_status_type(sid, iid)
 
-        time_relative = packet.udp.time_relative
-        time_delta = packet.udp.time_delta
-        total_length = packet_length
-        udp_length = packet.udp.length
-        source_port = packet.udp.srcport
-        destination_port = packet.udp.dstport
-        source_ip = packet.ip.src
-        destination_ip = packet.ip.dst
+        payload = pu.extract_payload(byte_field, status_type)
+
+        # UDP Layer data extraction
+        source_port = int(packet.udp.srcport)
+        destination_port = int(packet.udp.dstport)
 
         # IP layer data extraction
+        source_ip = str(packet.ip.src)
+        destination_ip = str(packet.ip.dst)
 
         # Ethernet layer data extraction
 
         new_pol_pkt = pu.PolPacket(
             status_type,
-            time_relative,
+            timestamp,
             time_delta,
-            total_length,
-            source_port,
-            destination_port,
+            packet_length,
             source_ip,
             destination_ip,
+            source_port,
+            destination_port,
+            payload,
         )
 
         masterPacketList.append(new_pol_pkt)
@@ -70,6 +72,13 @@ for packet in capture:
 
         status_type = pu.compute_status_type(sid, iid)
 
+        new_pol_pkt = pu.PolPacket(
+            status_type,
+            timestamp,
+            time_delta,
+        )
+        masterPacketList.append(new_pol_pkt)
+
         pu.PolPacket.increment_packet_counter()
 
     # Another elif for DHCP / SSDP
@@ -77,7 +86,10 @@ for packet in capture:
 
         pu.PolPacket.increment_packet_counter()
 
-print("Total Packets: " + str(pu.PolPacket.counter))
+
+for polpacket in masterPacketList:
+    polpacket.print_summary()
+
 
 # Plot our results
 if False:
