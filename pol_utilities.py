@@ -29,13 +29,13 @@ __DEFAULT_TRUE = "01"
 __DEFAULT_LENGTH = 8
 
 # Broadcast Packet
-__BROADCAST_STATUS_ID = 0
+__BROADCAST_STATUS_ID = "B"
 __BROADCAST_LENGTH = 60
 __BROADCAST_SID = "ffffffff"
 __BROADCAST_IID = "ffffffff"
 
 # Vehicle Speed Status Packet (Packet and UDP lengths are different from default)
-__VEHICLESPEEDSTATUS_STATUS_ID = 1
+__VEHICLESPEEDSTATUS_STATUS_ID = "SPEED"
 __VEHICLESPEEDSTATUS_LENGTH = 130
 __VEHICLESPEEDSTATUS_UDP_LENGTH = 96
 __VEHICLESPEEDSTATUS_SID = "aa00aba4"  # Hexadecimal
@@ -44,25 +44,100 @@ __VEHICLESPEEDSTATUS_PAYLOAD_LENGTH = 16
 __VEHICLESPEEDSTATUS_SPEED_END_BYTE = 8
 
 # Throttle Status Packet
-__THROTTLESTATUS_STATUS_ID = 2
+__THROTTLESTATUS_STATUS_ID = "THROTTLE"
 __THROTTLEPEDALSTATUS_SID = "aa00aba1"  # Hexadecimal
 __THROTTLEPEDALSTATUS_IID = "5500572e"  # Hexadecimal
 __THROTTLEPEDALSTATUS_DEMAND_END_BYTE = 8
 
 # Brake Status Packet
-__BRAKESTATUS_STATUS_ID = 3
+__BRAKESTATUS_STATUS_ID = "BRAKE"
 __BRAKESTATUS_SID = "aa00abc2"  # Hexadecimal
 __BRAKESTATUS_IID = "5500574f"  # Hexadecimal
 __BRAKESTATUS_END_BYTE = 2
 
 # Cruise Control Status Packet
-__CRUISECONTROL_STATUS_ID = 4
+__CRUISECONTROL_STATUS_ID = "CRUISE"
 __CRUISECONTROLSTATUS_SID = "aa00ab9b"  # Hexadecimal
 __CRUISECONTROLSTATUS_IID = "55005728"  # Hexadecimal
 __CRUISECONTROL_END_BYTE = 8
 
+# DHCP Packet
+__DHCP_STATUS_ID = "DHCP"
+__DHCP_SID = "eeeeeeee"
+__DHCP_IID = "eeeeeeee"
+__DHCP_LENGTH = 342
+
+# SSDP Packet
+__SSDP_STATUS_ID = "SSDP"
+__SSDP_SID = "dddddddd"
+__SSDP_IID = "dddddddd"
+__SSDP_LENGTH = 217
+
 # Malicious Packet
-__MALICIOUSPACKET_STATUS_ID = 5
+__MALICIOUSPACKET_STATUS_ID = "M"
+__MALICIOUSPACKET_SID = "mmmmmmmm"
+__MALICIOUSPACKET_IID = "mmmmmmmm"
+
+# Checks if a packet is valid (i.e. contains information on vehicle speed
+# status, cruise control, brake status or throttle status)
+def check_for_valid(packet):
+
+    # Check packet layers
+    if not check_number_of_layers(packet, __DEFAULT_PACKET_LAYERS):
+        return False
+    if not check_for_layers(packet, "eth", "ip", "udp", "data"):
+        return False
+
+    # Check packet and udp payload sizes
+    packet_length = int(packet.frame_info.len)
+    udp_payload_length = int(packet.udp.length)
+
+    if (
+        packet_length != __VEHICLESPEEDSTATUS_LENGTH
+        and packet_length != __DEFAULT_PACKET_LENGTH
+    ):
+        return False
+
+    if (
+        udp_payload_length != __DEFAULT_UDP_LENGTH
+        and udp_payload_length != __VEHICLESPEEDSTATUS_UDP_LENGTH
+    ):
+        return False
+
+    return True
+
+
+# Checks if a packet matches a broadcast message sent by the input controller
+def check_for_broadcast(packet):
+    if not check_number_of_layers(packet, __DEFAULT_BROADCAST_LAYERS):
+        return False
+
+    if not check_for_layers(packet, "eth", "data"):
+        return False
+
+    packet_length = int(packet.frame_info.len)
+
+    if packet_length != __BROADCAST_LENGTH:
+        return False
+
+    return True
+
+
+# Checks if a packet is sent using the DHCP packet in the network
+def check_for_dhcp(packet):
+    if check_for_layers(packet, "dhcp"):
+        return True
+
+    return False
+
+
+# Checks if a packet is sent using the SSDP protocol in the network
+def check_for_ssdp(packet):
+    if check_for_layers(packet, "ssdp"):
+        return True
+
+    return False
+
 
 # Checks that layers exist in a packet
 def check_for_layers(packet, *layers):
@@ -91,7 +166,7 @@ def check_attributes_in_layer(layer, *attributes):
     return True
 
 
-# Defines a status type (0 - 5) depending on the sid, iid
+# Defines a status type depending on the sid, iid
 def compute_status_type(sid, iid):
     if sid == __VEHICLESPEEDSTATUS_SID and iid == __VEHICLESPEEDSTATUS_IID:
         return __VEHICLESPEEDSTATUS_STATUS_ID
@@ -108,6 +183,12 @@ def compute_status_type(sid, iid):
     if sid == __BROADCAST_SID and iid == __BROADCAST_IID:
         return __BROADCAST_STATUS_ID
 
+    if sid == __DHCP_SID and iid == __DHCP_IID:
+        return __DHCP_STATUS_ID
+
+    if sid == __SSDP_SID and iid == __SSDP_IID:
+        return __SSDP_STATUS_ID
+
     return __MALICIOUSPACKET_STATUS_ID
 
 
@@ -118,37 +199,6 @@ def calculate_packet_throughput(packets, time):
         throughput = packets / time
     except ZeroDivisionError:
         return 0
-
-
-# Checks if a packet is valid (i.e. contains information on vehicle speed
-# status, cruise control, brake status or throttle status)
-def check_for_valid(packet):
-
-    # Check packet layers
-    if not check_number_of_layers(packet, __DEFAULT_PACKET_LAYERS):
-        return False
-    if not check_for_layers(packet, "eth", "ip", "udp", "data"):
-        return False
-
-    # Check layer attributes [IMPORTANT]
-
-    # Check packet and udp payload sizes
-    packet_length = int(packet.frame_info.len)
-    udp_payload_length = int(packet.udp.length)
-
-    if (
-        packet_length != __VEHICLESPEEDSTATUS_LENGTH
-        and packet_length != __DEFAULT_PACKET_LENGTH
-    ):
-        return False
-
-    if (
-        udp_payload_length != __DEFAULT_UDP_LENGTH
-        and udp_payload_length != __VEHICLESPEEDSTATUS_UDP_LENGTH
-    ):
-        return False
-
-    return True
 
 
 # Returns a concatenate string of bytes between start_byte (inclusive) and end_byte (not inclusive)
@@ -166,12 +216,27 @@ def extract_iid(byte_field):
     return extract_bytes(byte_field, __DEFAULT_IID_START_BYTE, __DEFAULT_IID_END_BYTE)
 
 
-def get_broadcast_sid():
-    return __BROADCAST_SID
+def retrieve_sid(packet_type):
+
+    if packet_type == "broadcast":
+        return __BROADCAST_SID
+    elif packet_type == "dhcp":
+        return __DHCP_SID
+    elif packet_type == "ssdp":
+        return __SSDP_SID
+    else:
+        return __MALICIOUSPACKET_SID
 
 
-def get_broadcast_iid():
-    return __BROADCAST_IID
+def retrieve_iid(packet_type):
+    if packet_type == "broadcast":
+        return __BROADCAST_IID
+    elif packet_type == "dhcp":
+        return __DHCP_IID
+    elif packet_type == "ssdp":
+        return __SSDP_IID
+    else:
+        return __MALICIOUSPACKET_IID
 
 
 def extract_payload(byte_field, status_type):
@@ -207,71 +272,3 @@ def extract_payload(byte_field, status_type):
         cruise_control_hex = payload[0:__THROTTLEPEDALSTATUS_DEMAND_END_BYTE]
         cruise_control_decimal = int(cruise_control_hex, 16)
         return cruise_control_decimal
-
-
-# Checks if a packet matches a broadcast message sent by the input controller
-def check_for_broadcast(packet):
-    if not check_number_of_layers(packet, __DEFAULT_BROADCAST_LAYERS):
-        return False
-
-    if not check_for_layers(packet, "eth", "data"):
-        return False
-
-    packet_length = int(packet.frame_info.len)
-
-    if packet_length != __BROADCAST_LENGTH:
-        return False
-
-    return True
-
-
-# ====================================================================
-# Helper Methods
-# ====================================================================
-
-
-# Extract relevant information
-
-# A class that holds the attributes required to implement the PoL processing framework
-class PolPacket:
-    counter = 0
-
-    def __init__(
-        self,
-        status_type=0,
-        timestamp=0,
-        time_delta=0,
-        packet_length=0,
-        source_ip="",
-        destination_ip="",
-        source_port=0,
-        destination_port=0,
-        payload=0,
-    ):
-        self.status_type = status_type
-        self.timestamp = timestamp
-        self.time_delta = time_delta
-        self.packet_length = packet_length  # in bytes
-        self.source_ip = source_ip
-        self.destination_ip = destination_ip
-        self.source_port = source_port
-        self.destination_port = destination_port
-        self.payload = payload
-
-    # Provides a packet summary
-    def print_summary(self):
-        print("Packet Summary ")
-        print("Status Type: " + str(self.status_type))
-        print("Timestamp: " + str(self.timestamp))
-        print("Time Delta: " + str(self.time_delta))
-        print("Packet Length: " + str(self.packet_length))
-        print("Source IP: " + self.source_ip)
-        print("Destination IP: " + self.destination_ip)
-        print("Source Port: " + str(self.source_port))
-        print("Destination Port: " + str(self.destination_port))
-        print("Payload: " + str(self.payload))
-        print("\n")
-
-    @classmethod
-    def increment_packet_counter(cls):
-        cls.counter += 1

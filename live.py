@@ -1,5 +1,4 @@
 import pyshark
-import plot
 
 # This is a python utility to capture packets live over the
 # Automotive Rig v1.0 from Thales.

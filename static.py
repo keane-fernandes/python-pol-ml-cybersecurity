@@ -1,37 +1,51 @@
-import pyshark
+import pyshark as ps
 import collections
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import pol_utilities as pu
 
 # Packet lists based on PolPacket class in pol_utilities
-masterPacketList = []
 vehicleSpeedPackets = []
 throttlePedalPackets = []
 brakeStatusPackets = []
 cruiseControlPackets = []
 broadcastPackets = []
 maliciousPackets = []
+packet_attributes = [
+    "DateTime",
+    "StatusType",
+    "Timestamp",
+    "TimeDelta",
+    "PacketLength",
+    "SourceIP",
+    "DestinationIP",
+    "SourcePort",
+    "DestinationPort",
+    "Payload",
+]
+masterPacketList = pd.DataFrame(columns=packet_attributes)
 
 # Behaviour Parameters
 validPackets = 0
 broadcastPackets = 0
 maliciousPackets = 0
+throughput = 0.0  # packets/sec
 time = 0.0
 
 # Import packets from capture file
-capture = pyshark.FileCapture(
-    "./pcaps/test_with_broadcast.pcapng", only_summaries=False, keep_packets=False
+capture = ps.FileCapture(
+    "./pcaps/baseline-1.pcapng", only_summaries=False, keep_packets=False
 )
 
 # Iterate though packets and populate PolPacket object
 for packet in capture:
-    packet_length = packet.frame_info.len
-    timestamp = packet.frame_info.time_relative
-    time_delta = packet.frame_info.time_delta
+    packet_date_time = str(packet.frame_info.time)
+    packet_length = int(packet.frame_info.len)
+    timestamp = float(packet.frame_info.time_relative)
+    time_delta = float(packet.frame_info.time_delta)
 
     if pu.check_for_valid(packet):
-
         byte_field = packet.udp.payload.split(":")
 
         sid = pu.extract_sid(byte_field)
@@ -49,9 +63,8 @@ for packet in capture:
         source_ip = str(packet.ip.src)
         destination_ip = str(packet.ip.dst)
 
-        # Ethernet layer data extraction
-
-        new_pol_pkt = pu.PolPacket(
+        entry = [
+            packet_date_time,
             status_type,
             timestamp,
             time_delta,
@@ -61,50 +74,92 @@ for packet in capture:
             source_port,
             destination_port,
             payload,
-        )
+        ]
 
-        masterPacketList.append(new_pol_pkt)
-        pu.PolPacket.increment_packet_counter()
+        df_temp = pd.DataFrame([entry], columns=packet_attributes)
+        masterPacketList = masterPacketList.append(df_temp, ignore_index=True)
 
     elif pu.check_for_broadcast(packet):
-        sid = pu.get_broadcast_sid()
-        iid = pu.get_broadcast_iid()
+        sid = pu.retrieve_sid("broadcast")
+        iid = pu.retrieve_iid("broadcast")
 
         status_type = pu.compute_status_type(sid, iid)
-
-        new_pol_pkt = pu.PolPacket(
+        entry = [
+            packet_date_time,
             status_type,
             timestamp,
             time_delta,
-        )
-        masterPacketList.append(new_pol_pkt)
+            packet_length,
+            np.nan,
+            np.nan,
+            np.nan,
+            np.nan,
+            np.nan,
+        ]
 
-        pu.PolPacket.increment_packet_counter()
+        df_temp = pd.DataFrame([entry], columns=packet_attributes)
+        masterPacketList = masterPacketList.append(df_temp, ignore_index=True)
 
-    # Another elif for DHCP / SSDP
+    elif pu.check_for_dhcp(packet):
+        sid = pu.retrieve_sid("dhcp")
+        iid = pu.retrieve_iid("dhcp")
+
+        status_type = pu.compute_status_type(sid, iid)
+
+        source_port = int(packet.udp.srcport)
+        destination_port = int(packet.udp.dstport)
+
+        source_ip = str(packet.ip.src)
+        destination_ip = str(packet.ip.dst)
+
+        entry = [
+            packet_date_time,
+            status_type,
+            timestamp,
+            time_delta,
+            packet_length,
+            source_ip,
+            destination_ip,
+            source_port,
+            destination_port,
+            np.nan,
+        ]
+
+        df_temp = pd.DataFrame([entry], columns=packet_attributes)
+        masterPacketList = masterPacketList.append(df_temp, ignore_index=True)
+
+    elif pu.check_for_ssdp(packet):
+        sid = pu.retrieve_sid("ssdp")
+        iid = pu.retrieve_iid("ssdp")
+
+        status_type = pu.compute_status_type(sid, iid)
+
+        source_port = int(packet.udp.srcport)
+        destination_port = int(packet.udp.dstport)
+
+        source_ip = str(packet.ip.src)
+        destination_ip = str(packet.ip.dst)
+        entry = [
+            packet_date_time,
+            status_type,
+            timestamp,
+            time_delta,
+            packet_length,
+            source_ip,
+            destination_ip,
+            source_port,
+            destination_port,
+            np.nan,
+        ]
+
+        df_temp = pd.DataFrame([entry], columns=packet_attributes)
+        masterPacketList = masterPacketList.append(df_temp, ignore_index=True)
     else:
-
-        pu.PolPacket.increment_packet_counter()
-
-
-for polpacket in masterPacketList:
-    polpacket.print_summary()
+        pass
 
 
-# Plot our results
-if False:
-    for pkt in masterPacketList:
-        print(pkt.time_delta)
+print("Training Statistics:")
+print("Packets processed: " + str(len(masterPacketList.index)))
 
-    plt.style.use("ggplot")
-    y_pos = np.arange(len(list(counter.keys())))
-    plt.bar(
-        y_pos,
-        list(counter.values()),
-        align="center",
-        alpha=0.5,
-        color=["b", "g", "r", "c"],
-    )
-    plt.xticks(y_pos, list(counter.keys()))
-    plt.ylabel("Frequency")
-    plt.show()
+masterPacketList.index.name = "PacketNumber"
+masterPacketList.to_csv("./output.csv", index=False)
