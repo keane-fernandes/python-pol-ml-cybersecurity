@@ -1,28 +1,164 @@
-import pyshark
-
 # This is a python utility to capture packets live over the
 # Automotive Rig v1.0 from Thales.
+import pyshark as ps
+import collections
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import pol_utilities as pu
 
-# Interface might need to be changed depending on your system.
-capture = pyshark.LiveCapture(
-    interface="en5", only_summaries=False, display_filter="udp"
-)
+vehicleSpeedPackets = []
+throttlePedalPackets = []
+brakeStatusPackets = []
+cruiseControlPackets = []
+broadcastPackets = []
+maliciousPackets = []
+packet_attributes = [
+    "DateTime",
+    "StatusType",
+    "Timestamp",
+    "TimeDelta",
+    "PacketLength",
+    "SourceIP",
+    "DestinationIP",
+    "SourcePort",
+    "DestinationPort",
+    "Payload",
+]
+masterPacketList = pd.DataFrame(columns=packet_attributes)
 
-for packet in capture.sniff_continuously(packet_count=1):
-    if False:
-        # Prints out packet as a string -- change only_summaries
-        # to True if you want one line
-        print(packet.__str__())
-        #
-        print(packet.frame_info)
-        # Check for fields in packet that can be accessed
-        attributes = dir(packet)
-        print(attributes)
-        # Print highest layer
-        if packet.highest_layer != "DATA":
-            print("Anomaly detected")
+# Behaviour Parameters
+validPackets = 0
+broadcastPackets = 0
+maliciousPackets = 0
+throughput = 0.0  # packets/sec
+time = 0.0
 
-    print(packet.get_multiple_layers)
+# Change the interface as needed
+capture = ps.LiveCapture(interface="en5", only_summaries=False)
+
+# Iterate though packets and populate PolPacket object
+for packet in capture.sniff_continuously(packet_count=100):
+    packet_date_time = str(packet.frame_info.time)
+    packet_length = int(packet.frame_info.len)
+    timestamp = float(packet.frame_info.time_relative)
+    time_delta = float(packet.frame_info.time_delta)
+
+    if pu.check_for_valid(packet):
+        byte_field = packet.udp.payload.split(":")
+
+        sid = pu.extract_sid(byte_field)
+        iid = pu.extract_iid(byte_field)
+
+        status_type = pu.compute_status_type(sid, iid)
+
+        payload = pu.extract_payload(byte_field, status_type)
+
+        # UDP Layer data extraction
+        source_port = int(packet.udp.srcport)
+        destination_port = int(packet.udp.dstport)
+
+        # IP layer data extraction
+        source_ip = str(packet.ip.src)
+        destination_ip = str(packet.ip.dst)
+
+        entry = [
+            packet_date_time,
+            status_type,
+            timestamp,
+            time_delta,
+            packet_length,
+            source_ip,
+            destination_ip,
+            source_port,
+            destination_port,
+            payload,
+        ]
+
+        df_temp = pd.DataFrame([entry], columns=packet_attributes)
+        masterPacketList = masterPacketList.append(df_temp, ignore_index=True)
+
+    elif pu.check_for_broadcast(packet):
+        sid = pu.retrieve_sid("broadcast")
+        iid = pu.retrieve_iid("broadcast")
+
+        status_type = pu.compute_status_type(sid, iid)
+        entry = [
+            packet_date_time,
+            status_type,
+            timestamp,
+            time_delta,
+            packet_length,
+            np.nan,
+            np.nan,
+            np.nan,
+            np.nan,
+            np.nan,
+        ]
+
+        df_temp = pd.DataFrame([entry], columns=packet_attributes)
+        masterPacketList = masterPacketList.append(df_temp, ignore_index=True)
+
+    elif pu.check_for_dhcp(packet):
+        sid = pu.retrieve_sid("dhcp")
+        iid = pu.retrieve_iid("dhcp")
+
+        status_type = pu.compute_status_type(sid, iid)
+
+        source_port = int(packet.udp.srcport)
+        destination_port = int(packet.udp.dstport)
+
+        source_ip = str(packet.ip.src)
+        destination_ip = str(packet.ip.dst)
+
+        entry = [
+            packet_date_time,
+            status_type,
+            timestamp,
+            time_delta,
+            packet_length,
+            source_ip,
+            destination_ip,
+            source_port,
+            destination_port,
+            np.nan,
+        ]
+
+        df_temp = pd.DataFrame([entry], columns=packet_attributes)
+        masterPacketList = masterPacketList.append(df_temp, ignore_index=True)
+
+    elif pu.check_for_ssdp(packet):
+        sid = pu.retrieve_sid("ssdp")
+        iid = pu.retrieve_iid("ssdp")
+
+        status_type = pu.compute_status_type(sid, iid)
+
+        source_port = int(packet.udp.srcport)
+        destination_port = int(packet.udp.dstport)
+
+        source_ip = str(packet.ip.src)
+        destination_ip = str(packet.ip.dst)
+        entry = [
+            packet_date_time,
+            status_type,
+            timestamp,
+            time_delta,
+            packet_length,
+            source_ip,
+            destination_ip,
+            source_port,
+            destination_port,
+            np.nan,
+        ]
+
+        df_temp = pd.DataFrame([entry], columns=packet_attributes)
+        masterPacketList = masterPacketList.append(df_temp, ignore_index=True)
+    else:
+        pass
 
 
-capture.close()
+print("Training Statistics:")
+print("Packets processed: " + str(len(masterPacketList.index)))
+
+masterPacketList.index.name = "PacketNumber"
+masterPacketList.to_csv("./live.csv", index=False)
