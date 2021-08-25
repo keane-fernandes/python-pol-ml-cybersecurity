@@ -1,20 +1,26 @@
-# Contains helper methods, class definitions and constants to
-# aid Pattern of Life (PoL) framework implementation
+""""
 
-# There are six types of statuses:
-#   0 - Broadcast
-#   1 - Vehicle Speed
-#   2 - Throttle Pedal
-#   3 - Brake Status
-#   4 - Cruise Control
-#   5 - Unknown / Malicious
+Hardware:       Automotive Rig v1.0 from Thales
+Description:    This is a python utility that contains helper methods and constants
+                to aid static.py and live.py in implementing the PoL framework.
+
+                There are six types of statuses:
+                    AA - Broadcast
+                    VS - Vehicle Speed
+                    TP - Throttle Pedal
+                    BS - Brake Status
+                    CC - Cruise Control
+                    XX - Unknown / Malicious
+
+User Iput:      None required.
+Usage:          It is a helper file, cannot be opened directly.
+
+"""
 
 # Libraries
 import pyshark.packet as p
 
-# Constants
-
-# General
+# General constants
 __DEFAULT_PACKET_LENGTH = 122
 __DEFAULT_UDP_LENGTH = 88
 __DEFAULT_PACKET_LAYERS = 4
@@ -216,6 +222,7 @@ def extract_iid(byte_field):
     return extract_bytes(byte_field, __DEFAULT_IID_START_BYTE, __DEFAULT_IID_END_BYTE)
 
 
+# Returns an sid based on a specified packet type
 def retrieve_sid(packet_type):
 
     if packet_type == "broadcast":
@@ -228,6 +235,7 @@ def retrieve_sid(packet_type):
         return __MALICIOUSPACKET_SID
 
 
+# Returns an iid based on a specified packet type
 def retrieve_iid(packet_type):
     if packet_type == "broadcast":
         return __BROADCAST_IID
@@ -239,6 +247,7 @@ def retrieve_iid(packet_type):
         return __MALICIOUSPACKET_IID
 
 
+# Extracts the payload from the hexdump depending on the status type
 def extract_payload(byte_field, status_type):
     if status_type == __VEHICLESPEEDSTATUS_STATUS_ID:
 
@@ -272,3 +281,28 @@ def extract_payload(byte_field, status_type):
         cruise_control_hex = payload[0:__THROTTLEPEDALSTATUS_DEMAND_END_BYTE]
         cruise_control_decimal = int(cruise_control_hex, 16)
         return cruise_control_decimal
+
+
+# Extract date from a DateTime string from Wireshark
+def extract_date(date_time_string):
+    string = date_time_string[1 : (len(date_time_string) - 1)]
+    string = string.replace(",", "")
+
+    extracted_information = string.split(" ")
+    return "-".join(extracted_information[0:3])
+
+
+# Extract time from a DateTime string from Wireshark
+def extract_time(date_time_string):
+    string = date_time_string[1 : (len(date_time_string) - 1)]
+
+    extracted_information = string.split(" ")
+    return extracted_information[3]
+
+
+# Extract timezone from a DateTime string from Wireshark
+def extract_location(date_time_string):
+    string = date_time_string[1 : (len(date_time_string) - 1)]
+
+    extracted_information = string.split(" ")
+    return extracted_information[4]

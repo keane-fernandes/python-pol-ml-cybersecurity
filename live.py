@@ -1,5 +1,13 @@
-# This is a python utility to capture packets live over the
-# Automotive Rig v1.0 from Thales.
+""""
+
+This is a python utility to capture packets live over the Automotive Rig v1.0 from Thales.
+The user needs to define only ONE of the following:
+    1. The number of packets 
+                OR
+    2. The timeout in seconds
+
+"""
+
 import pyshark as ps
 import collections
 import matplotlib.pyplot as plt
@@ -34,12 +42,17 @@ maliciousPackets = 0
 throughput = 0.0  # packets/sec
 time = 0.0
 
-# Change the interface as needed
+# IMPORTANT : change the interface for your system
 capture = ps.LiveCapture(interface="en5", only_summaries=False)
 
-# Iterate though packets and populate PolPacket object
-for packet in capture.sniff_continuously(packet_count=100):
+# Iterate though packets and populate the list of packet parameters
+for packet in capture.sniff_continuously(packet_count=150000):
+    spatiotemporal = []
     packet_date_time = str(packet.frame_info.time)
+    date = pu.extract_date(packet_date_time)
+    time = pu.extract_time(packet_date_time)
+    location = pu.extract_location(packet_date_time)
+
     packet_length = int(packet.frame_info.len)
     timestamp = float(packet.frame_info.time_relative)
     time_delta = float(packet.frame_info.time_delta)

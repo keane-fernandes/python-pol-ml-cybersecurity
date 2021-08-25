@@ -1,3 +1,15 @@
+""""
+Name:           static.py
+Hardware:       Automotive Rig v1.0 from Thales
+Description:    This is a python utility that can parse a specified capture file
+                and outputs the data to a .csv file and stores it in the 
+                pol_profiles directory. If the directory does not exist, it will be
+                created in the current working directory.
+
+User Iput:      The user will need to provide the name of the profile being created 
+                using a string as an argument when opening the file.
+
+"""
 import pyshark as ps
 import collections
 import matplotlib.pyplot as plt
@@ -40,6 +52,7 @@ capture = ps.FileCapture(
 
 # Iterate though packets and populate PolPacket object
 for packet in capture:
+    spatiotemporal = []
     packet_date_time = str(packet.frame_info.time)
     packet_length = int(packet.frame_info.len)
     timestamp = float(packet.frame_info.time_relative)
