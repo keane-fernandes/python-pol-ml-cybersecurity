@@ -180,3 +180,7 @@ dmypy.json
 cython_debug/
 
 test.py
+
+# CSV files
+
+*.csv
