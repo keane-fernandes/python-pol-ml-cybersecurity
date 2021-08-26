@@ -19,6 +19,7 @@ Usage:          It is a helper file, cannot be opened directly.
 
 # Libraries
 import pyshark.packet as p
+import os
 
 # General constants
 __DEFAULT_PACKET_LENGTH = 122
@@ -306,3 +307,17 @@ def extract_location(date_time_string):
 
     extracted_information = string.split(" ")
     return extracted_information[4]
+
+
+# ----------------------------------------------------------------
+# File IO
+# ----------------------------------------------------------------
+
+
+def check_if_preprocessed(filename, processed):
+    filename_without_extension = os.path.splitext(filename)[0]
+    for f in processed:
+        if str(filename_without_extension) == str(f):
+            return True
+
+    return False
