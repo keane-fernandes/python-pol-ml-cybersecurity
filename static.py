@@ -1,13 +1,14 @@
 """"
-Name:           static.py
-Hardware:       Automotive Rig v1.0 from Thales
-Description:    This is a python utility that can parse a specified capture file
-                and outputs the data to a .csv file and stores it in the 
-                pol_profiles directory. If the directory does not exist, it will be
-                created in the current working directory.
+Name: static.py
 
-User Iput:      The user will need to provide the name of the profile being created 
-                using a string as an argument when opening the file.
+Hardware: Automotive Rig v1.0 from Thales
+
+Description: This is a python utility that can parse a specified capture file and 
+outputs the data to a .csv file and stores it in the pol_profiles directory. If the 
+directory does not exist, it will be created in the current working directory.
+
+User Input: The user will need to provide the name of the profile being created 
+using a string as an argument when opening the file.
 
 """
 import pyshark as ps
@@ -47,7 +48,7 @@ time = 0.0
 
 # Import packets from capture file
 capture = ps.FileCapture(
-    "./pcaps/baseline-1.pcapng", only_summaries=False, keep_packets=False
+    "./pol_raw/CC-true/baseline-1.pcapng", only_summaries=False, keep_packets=False
 )
 
 # Iterate though packets and populate PolPacket object

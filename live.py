@@ -1,10 +1,13 @@
 """"
 
 This is a python utility to capture packets live over the Automotive Rig v1.0 from Thales.
-The user needs to define only ONE of the following:
-    1. The number of packets 
-                OR
-    2. The timeout in seconds
+The user needs to define only ONE of the following as an argument on the command line:
+
+1. The number of packets 
+
+            OR
+
+2. The timeout in seconds
 
 """
 
