@@ -1,3 +1,5 @@
+# print(packet.layer._all_fields)
+
 # UDP attributes
 {
     "udp.srcport": "28191",
