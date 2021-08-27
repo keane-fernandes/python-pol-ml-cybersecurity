@@ -43,6 +43,7 @@ files_to_process = [
     f
     for f in os.listdir(input_folder_path)
     if os.path.isfile(os.path.join(input_folder_path, f))
+    if f.endswith(".pcapng")
 ]
 
 # Files that have been already preprocessed (.csv)
@@ -50,11 +51,14 @@ completed = [
     d
     for d in os.listdir(output_folder_path)
     if os.path.isfile(os.path.join(output_folder_path, d))
+    if d.endswith(".csv")
 ]
+
+print(files_to_process)
+print(completed)
 
 # files_to_process list and completed list are compared, and if a file does not
 # exist in completed, it undergoes parsing and preprocessing
-
 for the_file in files_to_process:
     if not pu.check_if_preprocessed(the_file, completed):
         # Create the dataframes for the different kinds of packets
@@ -66,7 +70,7 @@ for the_file in files_to_process:
 
         # Iterate though packets and populate the above declared dataframes
         for packet in capture:
-            packet_date_time = str(packet.frame_info.time)
+            packet_date_time = pd.to_datetime(str(packet.frame_info.time))
             packet_length = int(packet.frame_info.len)
             timestamp = float(packet.frame_info.time_relative)
             time_delta = float(packet.frame_info.time_delta)
