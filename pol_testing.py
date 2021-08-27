@@ -1,7 +1,7 @@
 """"
 
 This is a python script that performs assert tests and unit tests on
-the methods in pol_utilities.py.
+the methods in pol_utilities.py. This runs when setup.py runs.
 
 """
 import pyshark as ps
@@ -19,6 +19,7 @@ assert time == "19:30:34.106134000"
 assert location == "BST"
 
 # Unit tests
+# Use the small pcap files in 05_pol_testing
 
 if False:
     columns = ["Name", "Age"]
