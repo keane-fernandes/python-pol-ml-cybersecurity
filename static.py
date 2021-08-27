@@ -54,9 +54,6 @@ completed = [
     if d.endswith(".csv")
 ]
 
-print(files_to_process)
-print(completed)
-
 # files_to_process list and completed list are compared, and if a file does not
 # exist in completed, it undergoes parsing and preprocessing
 for the_file in files_to_process:
@@ -68,6 +65,7 @@ for the_file in files_to_process:
         filePath = os.path.join(input_folder_path, the_file)
         capture = ps.FileCapture(filePath, only_summaries=False, keep_packets=False)
 
+        print("Currently processing: {}".format(the_file))
         # Iterate though packets and populate the above declared dataframes
         for packet in capture:
             packet_date_time = pd.to_datetime(str(packet.frame_info.time))
@@ -186,9 +184,9 @@ for the_file in files_to_process:
                 master_packets = master_packets.append(df_temp, ignore_index=True)
 
             else:
+                print("Uknown packet encountered!")
                 pass
 
-        print("PCAP file processed: {}".format(the_file))
         print("Packets processed: " + str(len(master_packets.index)))
 
         # Write the newly parsed file to the 01_pol_preprocessed directory
