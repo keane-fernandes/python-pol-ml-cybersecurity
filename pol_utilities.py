@@ -314,10 +314,8 @@ def extract_location(date_time_string):
 # ----------------------------------------------------------------
 
 
-def check_if_preprocessed(filename, processed):
-    filename_without_extension = os.path.splitext(filename)[0]
-    for f in processed:
-        if str(filename_without_extension) == str(f):
+def check_if_preprocessed(filename, processed_list):
+    for f in processed_list:
+        if os.path.splitext(filename)[0] == os.path.splitext(f)[0]:
             return True
-
     return False

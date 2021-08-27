@@ -38,37 +38,33 @@ cwd = os.getcwd()
 input_folder_path = os.path.join(cwd, dirs.root.get("testing"))
 output_folder_path = os.path.join(cwd, dirs.root.get("preprocessed"))
 
-# Files in their raw form
+# Files in their raw form (.pcapng)
 files_to_process = [
     f
     for f in os.listdir(input_folder_path)
     if os.path.isfile(os.path.join(input_folder_path, f))
 ]
 
-# Files that have been already processed
+# Files that have been already preprocessed (.csv)
 completed = [
     d
     for d in os.listdir(output_folder_path)
-    if os.path.isdir(os.path.join(output_folder_path, d))
+    if os.path.isfile(os.path.join(output_folder_path, d))
 ]
 
-# files_to_process and completed are compared, and if a file does not
-# exist in completed, it undergoes parsing
+# files_to_process list and completed list are compared, and if a file does not
+# exist in completed, it undergoes parsing and preprocessing
 
 for the_file in files_to_process:
     if not pu.check_if_preprocessed(the_file, completed):
-        vehicleSpeedPackets = pd.DataFrame(columns=packet_attributes)
-        throttlePedalPackets = pd.DataFrame(columns=packet_attributes)
-        brakeStatusPackets = pd.DataFrame(columns=packet_attributes)
-        cruiseControlPackets = pd.DataFrame(columns=packet_attributes)
-        broadcast_packets = pd.DataFrame(columns=packet_attributes)
-        malicious_packets = pd.DataFrame(columns=packet_attributes)
-        masterPacketList = pd.DataFrame(columns=packet_attributes)
+        # Create the dataframes for the different kinds of packets
+        master_packets = pd.DataFrame(columns=packet_attributes)
 
+        # Import the .pcapng file
         filePath = os.path.join(input_folder_path, the_file)
         capture = ps.FileCapture(filePath, only_summaries=False, keep_packets=False)
 
-        # Iterate though packets and populate the defined dataframes
+        # Iterate though packets and populate the above declared dataframes
         for packet in capture:
             packet_date_time = str(packet.frame_info.time)
             packet_length = int(packet.frame_info.len)
@@ -107,7 +103,7 @@ for the_file in files_to_process:
                 ]
 
                 df_temp = pd.DataFrame([entry], columns=packet_attributes)
-                masterPacketList = masterPacketList.append(df_temp, ignore_index=True)
+                master_packets = master_packets.append(df_temp, ignore_index=True)
 
             elif pu.check_for_broadcast(packet):
                 sid = pu.retrieve_sid("broadcast")
@@ -128,7 +124,7 @@ for the_file in files_to_process:
                 ]
 
                 df_temp = pd.DataFrame([entry], columns=packet_attributes)
-                masterPacketList = masterPacketList.append(df_temp, ignore_index=True)
+                master_packets = master_packets.append(df_temp, ignore_index=True)
 
             elif pu.check_for_dhcp(packet):
                 sid = pu.retrieve_sid("dhcp")
@@ -156,7 +152,7 @@ for the_file in files_to_process:
                 ]
 
                 df_temp = pd.DataFrame([entry], columns=packet_attributes)
-                masterPacketList = masterPacketList.append(df_temp, ignore_index=True)
+                master_packets = master_packets.append(df_temp, ignore_index=True)
 
             elif pu.check_for_ssdp(packet):
                 sid = pu.retrieve_sid("ssdp")
@@ -183,24 +179,17 @@ for the_file in files_to_process:
                 ]
 
                 df_temp = pd.DataFrame([entry], columns=packet_attributes)
-                masterPacketList = masterPacketList.append(df_temp, ignore_index=True)
+                master_packets = master_packets.append(df_temp, ignore_index=True)
 
             else:
                 pass
 
         print("PCAP file processed: {}".format(the_file))
-        print("Packets processed: " + str(len(masterPacketList.index)))
-        print("\n")
+        print("Packets processed: " + str(len(master_packets.index)))
 
-        # Write the newly parsed file to a folder with the same name as the file
+        # Write the newly parsed file to the 01_pol_preprocessed directory
+        new_csv_filename = str(os.path.splitext(the_file)[0]) + ".csv"
+        new_csv_path = os.path.join(output_folder_path, new_csv_filename)
 
-        folder_name = str(os.path.splitext(the_file)[0])
-        folder_path = os.path.join(output_folder_path, folder_name)
-
-        # Check if folder exists already done at the beginning
-        os.mkdir(folder_path)
-
-        if False:
-
-            masterPacketList.index.name = "PacketNumber"
-            masterPacketList.to_csv(outputFilePath, index=False)
+        master_packets.index.name = "PacketNumber"
+        master_packets.to_csv(new_csv_path, index=False)
