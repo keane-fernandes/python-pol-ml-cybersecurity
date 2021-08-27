@@ -183,10 +183,33 @@ for the_file in files_to_process:
                 df_temp = pd.DataFrame([entry], columns=packet_attributes)
                 master_packets = master_packets.append(df_temp, ignore_index=True)
 
-            else:
-                print("Uknown packet encountered!")
-                pass
+            elif pu.check_for_mdns(packet):
+                sid = pu.retrieve_sid("mdns")
+                iid = pu.retrieve_iid("mdns")
 
+                status_type = pu.compute_status_type(sid, iid)
+
+                source_port = int(packet.udp.srcport)
+                destination_port = int(packet.udp.dstport)
+
+                entry = [
+                    packet_date_time,
+                    status_type,
+                    timestamp,
+                    time_delta,
+                    packet_length,
+                    np.nan,
+                    np.nan,
+                    source_port,
+                    destination_port,
+                    np.nan,
+                ]
+                df_temp = pd.DataFrame([entry], columns=packet_attributes)
+                master_packets = master_packets.append(df_temp, ignore_index=True)
+            else:
+                print("Unknown packet encountered!")
+
+        capture.close()
         print("Packets processed: " + str(len(master_packets.index)))
 
         # Write the newly parsed file to the 01_pol_preprocessed directory

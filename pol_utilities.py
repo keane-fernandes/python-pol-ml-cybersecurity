@@ -18,7 +18,6 @@ Usage:          It is a helper file, cannot be opened directly.
 """
 
 # Libraries
-import pyshark.packet as p
 import os
 
 # General constants
@@ -79,6 +78,12 @@ __SSDP_STATUS_ID = "SSDP"
 __SSDP_SID = "dddddddd"
 __SSDP_IID = "dddddddd"
 __SSDP_LENGTH = 217
+
+# MDNS Packet
+__MDNS_STATUS_ID = "MDNS"
+__MDNS_SID = "cccccccc"
+__MDNS_IID = "cccccccc"
+# MDNS has varying lengths hence has been omitted
 
 # Malicious Packet
 __MALICIOUSPACKET_STATUS_ID = "M"
@@ -146,6 +151,14 @@ def check_for_ssdp(packet):
     return False
 
 
+# Checks if a packet is sent using the MDNS protocol in the network
+def check_for_mdns(packet):
+    if check_for_layers(packet, "mdns"):
+        return True
+
+    return False
+
+
 # Checks that layers exist in a packet
 def check_for_layers(packet, *layers):
     for layer in layers:
@@ -196,6 +209,9 @@ def compute_status_type(sid, iid):
     if sid == __SSDP_SID and iid == __SSDP_IID:
         return __SSDP_STATUS_ID
 
+    if sid == __MDNS_SID and iid == __MDNS_IID:
+        return __MDNS_STATUS_ID
+
     return __MALICIOUSPACKET_STATUS_ID
 
 
@@ -232,6 +248,8 @@ def retrieve_sid(packet_type):
         return __DHCP_SID
     elif packet_type == "ssdp":
         return __SSDP_SID
+    elif packet_type == "mdns":
+        return __MDNS_SID
     else:
         return __MALICIOUSPACKET_SID
 
@@ -244,6 +262,8 @@ def retrieve_iid(packet_type):
         return __DHCP_IID
     elif packet_type == "ssdp":
         return __SSDP_IID
+    elif packet_type == "mdns":
+        return __MDNS_IID
     else:
         return __MALICIOUSPACKET_IID
 
