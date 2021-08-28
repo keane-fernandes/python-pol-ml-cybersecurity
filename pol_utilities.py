@@ -17,6 +17,14 @@ Usage:          It is a helper file, cannot be opened directly.
 
 """
 
+# Project folders
+root = {
+    "raw": "00_raw",
+    "preprocess": "01_preprocessed",
+    "feature": "02_features",
+    "testing": "05_testing",
+}
+
 # Libraries
 import os
 
