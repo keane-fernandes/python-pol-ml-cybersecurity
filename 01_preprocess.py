@@ -16,21 +16,6 @@ import pandas as pd
 import pol_utilities as pu
 import os
 
-
-# Packet lists based on PolPacket class in pol_utilities
-packet_attributes = [
-    "DateTime",
-    "StatusType",
-    "Timestamp",
-    "TimeDelta",
-    "PacketLength",
-    "SourceIP",
-    "DestinationIP",
-    "SourcePort",
-    "DestinationPort",
-    "Payload",
-]
-
 # Define input and output folder paths
 cwd = os.getcwd()
 input_folder_path = os.path.join(cwd, pu.root.get("raw"))
@@ -57,7 +42,7 @@ completed = [
 for the_file in files_to_process:
     if not pu.check_if_preprocessed(the_file, completed):
         # Create the dataframes for the different kinds of packets
-        master_packets = pd.DataFrame(columns=packet_attributes)
+        master_packets = pd.DataFrame(columns=pu.packet_attributes)
 
         # Import the .pcapng file
         filePath = os.path.join(input_folder_path, the_file)
@@ -102,7 +87,7 @@ for the_file in files_to_process:
                     payload,
                 ]
 
-                df_temp = pd.DataFrame([entry], columns=packet_attributes)
+                df_temp = pd.DataFrame([entry], columns=pu.packet_attributes)
                 master_packets = master_packets.append(df_temp, ignore_index=True)
 
             elif pu.check_for_broadcast(packet):
@@ -123,7 +108,7 @@ for the_file in files_to_process:
                     np.nan,
                 ]
 
-                df_temp = pd.DataFrame([entry], columns=packet_attributes)
+                df_temp = pd.DataFrame([entry], columns=pu.packet_attributes)
                 master_packets = master_packets.append(df_temp, ignore_index=True)
 
             elif pu.check_for_dhcp(packet):
@@ -151,7 +136,7 @@ for the_file in files_to_process:
                     np.nan,
                 ]
 
-                df_temp = pd.DataFrame([entry], columns=packet_attributes)
+                df_temp = pd.DataFrame([entry], columns=pu.packet_attributes)
                 master_packets = master_packets.append(df_temp, ignore_index=True)
 
             elif pu.check_for_ssdp(packet):
@@ -178,7 +163,7 @@ for the_file in files_to_process:
                     np.nan,
                 ]
 
-                df_temp = pd.DataFrame([entry], columns=packet_attributes)
+                df_temp = pd.DataFrame([entry], columns=pu.packet_attributes)
                 master_packets = master_packets.append(df_temp, ignore_index=True)
 
             elif pu.check_for_mdns(packet):
@@ -202,7 +187,7 @@ for the_file in files_to_process:
                     destination_port,
                     np.nan,
                 ]
-                df_temp = pd.DataFrame([entry], columns=packet_attributes)
+                df_temp = pd.DataFrame([entry], columns=pu.packet_attributes)
                 master_packets = master_packets.append(df_temp, ignore_index=True)
             else:
                 sid = pu.retrieve_sid("malicious")
@@ -222,7 +207,7 @@ for the_file in files_to_process:
                     np.nan,
                     np.nan,
                 ]
-                df_temp = pd.DataFrame([entry], columns=packet_attributes)
+                df_temp = pd.DataFrame([entry], columns=pu.packet_attributes)
                 master_packets = master_packets.append(df_temp, ignore_index=True)
 
         capture.close()

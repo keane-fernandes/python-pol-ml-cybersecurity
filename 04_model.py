@@ -18,25 +18,7 @@ import numpy as np
 import pandas as pd
 import pol_utilities as pu
 
-vehicleSpeedPackets = []
-throttlePedalPackets = []
-brakeStatusPackets = []
-cruiseControlPackets = []
-broadcastPackets = []
-maliciousPackets = []
-packet_attributes = [
-    "DateTime",
-    "StatusType",
-    "Timestamp",
-    "TimeDelta",
-    "PacketLength",
-    "SourceIP",
-    "DestinationIP",
-    "SourcePort",
-    "DestinationPort",
-    "Payload",
-]
-masterPacketList = pd.DataFrame(columns=packet_attributes)
+masterPacketList = pd.DataFrame(columns=pu.packet_attributes)
 
 # Behaviour Parameters
 validPackets = 0
@@ -91,7 +73,7 @@ for packet in capture.sniff_continuously(packet_count=150000):
             payload,
         ]
 
-        df_temp = pd.DataFrame([entry], columns=packet_attributes)
+        df_temp = pd.DataFrame([entry], columns=pu.packet_attributes)
         masterPacketList = masterPacketList.append(df_temp, ignore_index=True)
 
     elif pu.check_for_broadcast(packet):
@@ -112,7 +94,7 @@ for packet in capture.sniff_continuously(packet_count=150000):
             np.nan,
         ]
 
-        df_temp = pd.DataFrame([entry], columns=packet_attributes)
+        df_temp = pd.DataFrame([entry], columns=pu.packet_attributes)
         masterPacketList = masterPacketList.append(df_temp, ignore_index=True)
 
     elif pu.check_for_dhcp(packet):
@@ -140,7 +122,7 @@ for packet in capture.sniff_continuously(packet_count=150000):
             np.nan,
         ]
 
-        df_temp = pd.DataFrame([entry], columns=packet_attributes)
+        df_temp = pd.DataFrame([entry], columns=pu.packet_attributes)
         masterPacketList = masterPacketList.append(df_temp, ignore_index=True)
 
     elif pu.check_for_ssdp(packet):

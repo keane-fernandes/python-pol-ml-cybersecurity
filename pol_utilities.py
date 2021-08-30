@@ -17,6 +17,20 @@ Usage:          It is a helper file, cannot be opened directly.
 
 """
 
+# Packet lists based on PolPacket class in pol_utilities
+packet_attributes = [
+    "DateTime",
+    "StatusType",
+    "Timestamp",
+    "TimeDelta",
+    "PacketLength",
+    "SourceIP",
+    "DestinationIP",
+    "SourcePort",
+    "DestinationPort",
+    "Payload",
+]
+
 # Project folders
 root = {
     "raw": "00_raw",
@@ -336,6 +350,25 @@ def extract_location(date_time_string):
 
     extracted_information = string.split(" ")
     return extracted_information[4]
+
+
+# ----------------------------------------------------------------
+# Feature Extraction
+# ----------------------------------------------------------------
+
+chunk_size = 43
+
+
+def get_behaviour(vehicle_speed, cruise_demand):
+    if vehicle_speed == 0:
+        return "Stopped"
+
+    if vehicle_speed > 0:
+        if cruise_demand > 0:
+            return "Cruising"
+        return "Moving"
+
+    return "Undefined"
 
 
 # ----------------------------------------------------------------
