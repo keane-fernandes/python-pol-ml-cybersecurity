@@ -6,5 +6,9 @@ import time
 import numpy as np
 
 
+def profile():
+    pass
+
+
 def main():
     pass

@@ -8,8 +8,8 @@ import numpy as np
 
 def feature():
     cwd = os.getcwd()
-    input_folder_path = os.path.join(cwd, pu.root.get("preprocess_test"))
-    output_folder_path = os.path.join(cwd, pu.root.get("feature_test"))
+    input_folder_path = os.path.join(cwd, pu.root.get("preprocess"))
+    output_folder_path = os.path.join(cwd, pu.root.get("feature"))
 
     files_to_process = [
         f
@@ -111,8 +111,12 @@ def feature():
             print("Dataset with {} rows generated.".format(df_features.shape[0]))
 
 
-if __name__ == "__main__":
+def main():
     start = time.time()
     feature()
     end = time.time()
-    print(end - start)
+    print("Feature layer execution time: " + str(end - start))
+
+
+if __name__ == "__main__":
+    main()

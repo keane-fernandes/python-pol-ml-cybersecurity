@@ -21,8 +21,8 @@ import time
 def preprocess():
     # Define input and output folder paths
     cwd = os.getcwd()
-    input_folder_path = os.path.join(cwd, pu.root.get("raw_test"))
-    output_folder_path = os.path.join(cwd, pu.root.get("preprocess_test"))
+    input_folder_path = os.path.join(cwd, pu.root.get("raw"))
+    output_folder_path = os.path.join(cwd, pu.root.get("preprocess"))
 
     # Files in their raw form (.pcapng)
     files_to_process = [
@@ -172,7 +172,7 @@ def main():
     start = time.time()
     preprocess()
     end = time.time()
-    print(end - start)
+    print("Preprocessing layer execution time: " + str(end - start))
 
 
 if __name__ == "__main__":

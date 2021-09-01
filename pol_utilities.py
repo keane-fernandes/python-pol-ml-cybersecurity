@@ -36,13 +36,12 @@ root = {
     "raw": "00_raw",
     "preprocess": "01_preprocessed",
     "feature": "02_features",
-    "testing": "06_testing",
-    "temp": "99_temp",
-    "raw_test": "10_raw",
-    "preprocess_test": "11_preprocessed",
-    "feature_test": "12_features",
     "profile": "03_profiles",
-    "plots": "05_plots",
+    "model": "04_models",
+    "plot": "05_plots",
+    "testing": "06_testing",
+    "input": "98_input",
+    "output": "99_output",
 }
 
 # Libraries
