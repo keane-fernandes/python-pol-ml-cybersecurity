@@ -6,10 +6,10 @@ import time
 import numpy as np
 
 
-def main():
+def feature():
     cwd = os.getcwd()
-    input_folder_path = os.path.join(cwd, pu.root.get("preprocess"))
-    output_folder_path = os.path.join(cwd, pu.root.get("feature"))
+    input_folder_path = os.path.join(cwd, pu.root.get("preprocess_test"))
+    output_folder_path = os.path.join(cwd, pu.root.get("feature_test"))
 
     files_to_process = [
         f
@@ -40,14 +40,8 @@ def main():
             for chunk in np.array_split(df_master, number_of_chunks):
 
                 # Subtract the last timestamp from the first timestamp
-
                 end_time = chunk.iloc[-1]["Timestamp"]
                 start_time = chunk.iloc[0]["Timestamp"]
-
-                if False:
-                    print("Chunk Size: " + str(chunk.shape[0]))
-                    print("Start time: " + str(start_time))
-                    print("End time: " + str(end_time))
 
                 time_window = chunk.iloc[-1]["Timestamp"] - chunk.iloc[0]["Timestamp"]
                 features_dict = {}
@@ -56,7 +50,6 @@ def main():
                 features_dict["TimeWindow"] = time_window
 
                 # Average timestamp for chunk
-
                 features_dict["Average_Timestamp"] = (
                     chunk.iloc[-1]["Timestamp"] + chunk.iloc[0]["Timestamp"]
                 ) / 2
@@ -120,6 +113,6 @@ def main():
 
 if __name__ == "__main__":
     start = time.time()
-    main()
+    feature()
     end = time.time()
     print(end - start)

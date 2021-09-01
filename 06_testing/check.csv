@@ -1,0 +1,4 @@
+DateTime,StatusType,Timestamp,TimeDelta,PacketLength,SourceIP,DestinationIP,SourcePort,DestinationPort,Payload
+2021-08-25 15:36:11.091855+01:00,M,0.0,0.0,122,,,,,
+2021-08-25 15:41:09.006493+01:00,M,297.914638,297.914638,122,,,,,
+2021-08-25 15:42:08.996654+01:00,M,357.904799,59.990161,130,,,,,

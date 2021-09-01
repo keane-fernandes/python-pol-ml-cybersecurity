@@ -1,2 +1,0 @@
-DateTime,StatusType,Timestamp,TimeDelta,PacketLength,SourceIP,DestinationIP,SourcePort,DestinationPort,Payload
-2021-07-22 15:15:32.787677+01:00,SSDP,0.0,0.0,217,169.254.251.112,239.255.255.250,50079,1900,

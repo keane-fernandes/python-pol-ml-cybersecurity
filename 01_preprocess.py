@@ -15,207 +15,165 @@ import numpy as np
 import pandas as pd
 import pol_utilities as pu
 import os
+import time
 
-# Define input and output folder paths
-cwd = os.getcwd()
-input_folder_path = os.path.join(cwd, pu.root.get("raw"))
-output_folder_path = os.path.join(cwd, pu.root.get("preprocess"))
 
-# Files in their raw form (.pcapng)
-files_to_process = [
-    f
-    for f in os.listdir(input_folder_path)
-    if os.path.isfile(os.path.join(input_folder_path, f))
-    if f.endswith(".pcapng")
-]
+def preprocess():
+    # Define input and output folder paths
+    cwd = os.getcwd()
+    input_folder_path = os.path.join(cwd, pu.root.get("raw_test"))
+    output_folder_path = os.path.join(cwd, pu.root.get("preprocess_test"))
 
-# Files that have been already preprocessed (.csv)
-completed = [
-    d
-    for d in os.listdir(output_folder_path)
-    if os.path.isfile(os.path.join(output_folder_path, d))
-    if d.endswith(".csv")
-]
+    # Files in their raw form (.pcapng)
+    files_to_process = [
+        f
+        for f in os.listdir(input_folder_path)
+        if os.path.isfile(os.path.join(input_folder_path, f))
+        if f.endswith(".pcapng")
+    ]
 
-# files_to_process list and completed list are compared, and if a file does not
-# exist in completed, it undergoes parsing and preprocessing
-for the_file in files_to_process:
-    if not pu.check_if_preprocessed(the_file, completed):
-        # Create the dataframes for the different kinds of packets
-        master_packets = pd.DataFrame(columns=pu.packet_attributes)
+    # Files that have been already preprocessed (.csv)
+    completed = [
+        d
+        for d in os.listdir(output_folder_path)
+        if os.path.isfile(os.path.join(output_folder_path, d))
+        if d.endswith(".csv")
+    ]
 
-        # Import the .pcapng file
-        filePath = os.path.join(input_folder_path, the_file)
-        capture = ps.FileCapture(filePath, only_summaries=False, keep_packets=False)
+    # files_to_process list and completed list are compared, and if a file does not
+    # exist in completed, it undergoes parsing and preprocessing
+    for the_file in files_to_process:
+        if not pu.check_if_preprocessed(the_file, completed):
+            # Create the dataframes for the different kinds of packets
+            counter = 0
+            master_dict = {}
 
-        print("Currently processing: {}".format(the_file))
-        # Iterate though packets and populate the above declared dataframes
-        for packet in capture:
-            packet_date_time = pd.to_datetime(str(packet.frame_info.time))
-            packet_length = int(packet.frame_info.len)
-            timestamp = float(packet.frame_info.time_relative)
-            time_delta = float(packet.frame_info.time_delta)
+            # Import the .pcapng file
+            filePath = os.path.join(input_folder_path, the_file)
+            capture = ps.FileCapture(filePath, only_summaries=False, keep_packets=False)
 
-            if pu.check_for_valid(packet):
-                byte_field = packet.udp.payload.split(":")
+            print("Currently processing: {}".format(the_file))
+            # Iterate though packets and populate the above declared dataframes
+            for packet in capture:
+                packet_dict = {}
 
-                sid = pu.extract_sid(byte_field)
-                iid = pu.extract_iid(byte_field)
+                packet_dict["DateTime"] = pd.to_datetime(str(packet.frame_info.time))
+                packet_dict["PacketLength"] = int(packet.frame_info.len)
+                packet_dict["Timestamp"] = float(packet.frame_info.time_relative)
+                packet_dict["TimeDelta"] = float(packet.frame_info.time_delta)
 
-                status_type = pu.compute_status_type(sid, iid)
+                if pu.check_for_valid(packet):
+                    # UDP Layer data extraction and IP layer data extraction
+                    packet_dict["SourcePort"] = int(packet.udp.srcport)
+                    packet_dict["DestinationPort"] = int(packet.udp.dstport)
+                    packet_dict["SourceIP"] = str(packet.ip.src)
+                    packet_dict["DestinationIP"] = str(packet.ip.dst)
 
-                payload = pu.extract_payload(byte_field, status_type)
+                    # Dissector methods
+                    byte_field = packet.udp.payload.split(":")
+                    sid = pu.extract_sid(byte_field)
+                    iid = pu.extract_iid(byte_field)
 
-                # UDP Layer data extraction
-                source_port = int(packet.udp.srcport)
-                destination_port = int(packet.udp.dstport)
+                    status_type = pu.compute_status_type(sid, iid)
+                    packet_dict["StatusType"] = status_type
+                    packet_dict["Payload"] = pu.extract_payload(byte_field, status_type)
 
-                # IP layer data extraction
-                source_ip = str(packet.ip.src)
-                destination_ip = str(packet.ip.dst)
+                    master_dict[counter] = packet_dict
+                    counter += 1
 
-                entry = [
-                    packet_date_time,
-                    status_type,
-                    timestamp,
-                    time_delta,
-                    packet_length,
-                    source_ip,
-                    destination_ip,
-                    source_port,
-                    destination_port,
-                    payload,
-                ]
+                elif pu.check_for_broadcast(packet):
+                    sid = pu.retrieve_sid("broadcast")
+                    iid = pu.retrieve_iid("broadcast")
 
-                df_temp = pd.DataFrame([entry], columns=pu.packet_attributes)
-                master_packets = master_packets.append(df_temp, ignore_index=True)
+                    # Irrelevant, but kept in for dataframe uniformity
+                    packet_dict["SourcePort"] = np.nan
+                    packet_dict["DestinationPort"] = np.nan
+                    packet_dict["SourceIP"] = np.nan
+                    packet_dict["DestinationIP"] = np.nan
 
-            elif pu.check_for_broadcast(packet):
-                sid = pu.retrieve_sid("broadcast")
-                iid = pu.retrieve_iid("broadcast")
+                    packet_dict["StatusType"] = pu.compute_status_type(sid, iid)
+                    packet_dict["Payload"] = np.nan
 
-                status_type = pu.compute_status_type(sid, iid)
-                entry = [
-                    packet_date_time,
-                    status_type,
-                    timestamp,
-                    time_delta,
-                    packet_length,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                ]
+                    master_dict[counter] = packet_dict
+                    counter += 1
 
-                df_temp = pd.DataFrame([entry], columns=pu.packet_attributes)
-                master_packets = master_packets.append(df_temp, ignore_index=True)
+                elif pu.check_for_dhcp(packet):
+                    packet_dict["SourcePort"] = int(packet.udp.srcport)
+                    packet_dict["DestinationPort"] = int(packet.udp.dstport)
+                    packet_dict["SourceIP"] = str(packet.ip.src)
+                    packet_dict["DestinationIP"] = str(packet.ip.dst)
 
-            elif pu.check_for_dhcp(packet):
-                sid = pu.retrieve_sid("dhcp")
-                iid = pu.retrieve_iid("dhcp")
+                    sid = pu.retrieve_sid("dhcp")
+                    iid = pu.retrieve_iid("dhcp")
 
-                status_type = pu.compute_status_type(sid, iid)
+                    packet_dict["StatusType"] = pu.compute_status_type(sid, iid)
+                    packet_dict["Payload"] = np.nan
 
-                source_port = int(packet.udp.srcport)
-                destination_port = int(packet.udp.dstport)
+                    master_dict[counter] = packet_dict
+                    counter += 1
 
-                source_ip = str(packet.ip.src)
-                destination_ip = str(packet.ip.dst)
+                elif pu.check_for_ssdp(packet):
+                    packet_dict["SourcePort"] = int(packet.udp.srcport)
+                    packet_dict["DestinationPort"] = int(packet.udp.dstport)
+                    packet_dict["SourceIP"] = str(packet.ip.src)
+                    packet_dict["DestinationIP"] = str(packet.ip.dst)
 
-                entry = [
-                    packet_date_time,
-                    status_type,
-                    timestamp,
-                    time_delta,
-                    packet_length,
-                    source_ip,
-                    destination_ip,
-                    source_port,
-                    destination_port,
-                    np.nan,
-                ]
+                    sid = pu.retrieve_sid("ssdp")
+                    iid = pu.retrieve_iid("ssdp")
 
-                df_temp = pd.DataFrame([entry], columns=pu.packet_attributes)
-                master_packets = master_packets.append(df_temp, ignore_index=True)
+                    packet_dict["StatusType"] = pu.compute_status_type(sid, iid)
+                    packet_dict["Payload"] = np.nan
 
-            elif pu.check_for_ssdp(packet):
-                sid = pu.retrieve_sid("ssdp")
-                iid = pu.retrieve_iid("ssdp")
+                    master_dict[counter] = packet_dict
+                    counter += 1
 
-                status_type = pu.compute_status_type(sid, iid)
+                elif pu.check_for_mdns(packet):
+                    packet_dict["SourcePort"] = int(packet.udp.srcport)
+                    packet_dict["DestinationPort"] = int(packet.udp.dstport)
+                    packet_dict["SourceIP"] = np.nan
+                    packet_dict["DestinationIP"] = np.nan
 
-                source_port = int(packet.udp.srcport)
-                destination_port = int(packet.udp.dstport)
+                    sid = pu.retrieve_sid("mdns")
+                    iid = pu.retrieve_iid("mdns")
 
-                source_ip = str(packet.ip.src)
-                destination_ip = str(packet.ip.dst)
-                entry = [
-                    packet_date_time,
-                    status_type,
-                    timestamp,
-                    time_delta,
-                    packet_length,
-                    source_ip,
-                    destination_ip,
-                    source_port,
-                    destination_port,
-                    np.nan,
-                ]
+                    packet_dict["StatusType"] = pu.compute_status_type(sid, iid)
+                    packet_dict["Payload"] = np.nan
 
-                df_temp = pd.DataFrame([entry], columns=pu.packet_attributes)
-                master_packets = master_packets.append(df_temp, ignore_index=True)
+                    master_dict[counter] = packet_dict
+                    counter += 1
 
-            elif pu.check_for_mdns(packet):
-                sid = pu.retrieve_sid("mdns")
-                iid = pu.retrieve_iid("mdns")
+                else:
+                    packet_dict["SourcePort"] = np.nan
+                    packet_dict["DestinationPort"] = np.nan
+                    packet_dict["SourceIP"] = np.nan
+                    packet_dict["DestinationIP"] = np.nan
 
-                status_type = pu.compute_status_type(sid, iid)
+                    sid = pu.retrieve_sid("malicious")
+                    iid = pu.retrieve_iid("malicious")
 
-                source_port = int(packet.udp.srcport)
-                destination_port = int(packet.udp.dstport)
+                    packet_dict["StatusType"] = pu.compute_status_type(sid, iid)
+                    packet_dict["Payload"] = np.nan
 
-                entry = [
-                    packet_date_time,
-                    status_type,
-                    timestamp,
-                    time_delta,
-                    packet_length,
-                    np.nan,
-                    np.nan,
-                    source_port,
-                    destination_port,
-                    np.nan,
-                ]
-                df_temp = pd.DataFrame([entry], columns=pu.packet_attributes)
-                master_packets = master_packets.append(df_temp, ignore_index=True)
-            else:
-                sid = pu.retrieve_sid("malicious")
-                iid = pu.retrieve_iid("malicious")
+                    master_dict[counter] = packet_dict
+                    counter += 1
 
-                status_type = pu.compute_status_type(sid, iid)
+            capture.close()
+            print("Packets processed: " + str(counter + 1))
 
-                entry = [
-                    packet_date_time,
-                    status_type,
-                    timestamp,
-                    time_delta,
-                    packet_length,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                ]
-                df_temp = pd.DataFrame([entry], columns=pu.packet_attributes)
-                master_packets = master_packets.append(df_temp, ignore_index=True)
+            # Write the newly parsed file to the 01_pol_preprocessed directory
+            new_csv_filename = str(os.path.splitext(the_file)[0]) + ".csv"
+            new_csv_path = os.path.join(output_folder_path, new_csv_filename)
 
-        capture.close()
-        print("Packets processed: " + str(len(master_packets.index)))
+            master_df = pd.DataFrame.from_dict(master_dict, orient="index")
+            master_df.to_csv(new_csv_path, index=False)
 
-        # Write the newly parsed file to the 01_pol_preprocessed directory
-        new_csv_filename = str(os.path.splitext(the_file)[0]) + ".csv"
-        new_csv_path = os.path.join(output_folder_path, new_csv_filename)
 
-        master_packets.index.name = "PacketNumber"
-        master_packets.to_csv(new_csv_path, index=False)
+def main():
+    start = time.time()
+    preprocess()
+    end = time.time()
+    print(end - start)
+
+
+if __name__ == "__main__":
+    main()

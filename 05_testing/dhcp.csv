@@ -1,2 +1,0 @@
-DateTime,StatusType,Timestamp,TimeDelta,PacketLength,SourceIP,DestinationIP,SourcePort,DestinationPort,Payload
-2021-07-22 15:13:40.968117+01:00,DHCP,0.0,0.0,342,0.0.0.0,255.255.255.255,68,67,
