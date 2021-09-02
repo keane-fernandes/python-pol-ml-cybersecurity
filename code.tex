@@ -1,0 +1,468 @@
+\usepackage{minted}
+\setminted{fontsize=\footnotesize,baselinestretch=1,linenos}
+
+\section{Dissector Source Code (Trim this down!)}
+\definecolor{my-bg}{rgb}{0.95,0.95,0.95}
+\begin{minted}[bgcolor=my-bg]{python}
+
+# Checks if a packet is speed, brake, throttle or cruise
+def check_for_valid(packet):
+    # Check packet layers
+    if not check_number_of_layers(packet, __DEFAULT_PACKET_LAYERS):
+        return False
+    if not check_for_layers(packet, "eth", "ip", "udp", "data"):
+        return False
+
+    # Check packet and udp payload sizes
+    packet_length = int(packet.frame_info.len)
+    udp_payload_length = int(packet.udp.length)
+
+    if (
+        packet_length != __VEHICLESPEEDSTATUS_LENGTH
+        and packet_length != __DEFAULT_PACKET_LENGTH
+    ):
+        return False
+
+    if (
+        udp_payload_length != __DEFAULT_UDP_LENGTH
+        and udp_payload_length != __VEHICLESPEEDSTATUS_UDP_LENGTH
+    ):
+        return False
+
+    return True
+
+# Checks if a packet matches a broadcast message sent by the input controller
+def check_for_broadcast(packet):
+    if not check_number_of_layers(packet, __DEFAULT_BROADCAST_LAYERS):
+        return False
+    if not check_for_layers(packet, "eth", "data"):
+        return False
+    packet_length = int(packet.frame_info.len)
+    if packet_length != __BROADCAST_LENGTH:
+        return False
+    return True
+
+# Checks if a packet is sent using the DHCP packet in the network
+def check_for_dhcp(packet):
+    if check_for_layers(packet, "dhcp"):
+        return True
+    return False
+
+# Checks if a packet is sent using the SSDP protocol in the network
+def check_for_ssdp(packet):
+    if check_for_layers(packet, "ssdp"):
+        return True
+    return False
+
+# Checks if a packet is sent using the MDNS protocol in the network
+def check_for_mdns(packet):
+    if check_for_layers(packet, "mdns"):
+        return True
+
+    return False
+
+# Checks that layers exist in a packet
+def check_for_layers(packet, *layers):
+    for layer in layers:
+        if not hasattr(packet, layer):
+            return False
+    return True
+
+# Checks that a packet has a specified number of layers
+def check_number_of_layers(packet, number):
+    packetLayers = packet.layers
+    packetLayersCount = len(packetLayers)
+    
+    if packetLayersCount != number:
+        return False
+    return True
+
+# Checks that all attributes exist in a layer
+def check_attributes_in_layer(layer, *attributes):
+    for attribute in attributes:
+        if not hasattr(layer, attribute):
+            return False
+    return True
+
+# Defines a status type depending on the sid, iid
+def compute_status_type(sid, iid):
+    if sid == __VEHICLESPEEDSTATUS_SID and iid == __VEHICLESPEEDSTATUS_IID:
+        return __VEHICLESPEEDSTATUS_STATUS_ID
+
+    if sid == __THROTTLEPEDALSTATUS_SID and iid == __THROTTLEPEDALSTATUS_IID:
+        return __THROTTLESTATUS_STATUS_ID
+
+    if sid == __BRAKESTATUS_SID and iid == __BRAKESTATUS_IID:
+        return __BRAKESTATUS_STATUS_ID
+
+    if sid == __CRUISECONTROLSTATUS_SID and iid == __CRUISECONTROLSTATUS_IID:
+        return __CRUISECONTROL_STATUS_ID
+
+    if sid == __BROADCAST_SID and iid == __BROADCAST_IID:
+        return __BROADCAST_STATUS_ID
+
+    if sid == __DHCP_SID and iid == __DHCP_IID:
+        return __DHCP_STATUS_ID
+
+    if sid == __SSDP_SID and iid == __SSDP_IID:
+        return __SSDP_STATUS_ID
+
+    if sid == __MDNS_SID and iid == __MDNS_IID:
+        return __MDNS_STATUS_ID
+
+    return __MALICIOUSPACKET_STATUS_ID
+
+# Returns a concatenated string of bytes between 
+# start_byte (inclusive) and end_byte (not inclusive)
+def extract_bytes(byte_field, start_byte, end_byte):
+    return "".join(byte_field[start_byte:end_byte])
+
+# Returns SID from the Service Message Header
+def extract_sid(byte_field):
+    return extract_bytes(byte_field, __DEFAULT_SID_START_BYTE, __DEFAULT_SID_END_BYTE)
+
+# Returns IID from the Service Message Header
+def extract_iid(byte_field):
+    return extract_bytes(byte_field, __DEFAULT_IID_START_BYTE, __DEFAULT_IID_END_BYTE)
+
+# Returns an sid based on a specified packet type
+def retrieve_sid(packet_type):
+    if packet_type == "broadcast":
+        return __BROADCAST_SID
+    elif packet_type == "dhcp":
+        return __DHCP_SID
+    elif packet_type == "ssdp":
+        return __SSDP_SID
+    elif packet_type == "mdns":
+        return __MDNS_SID
+    else:
+        return __MALICIOUSPACKET_SID
+
+# Returns an iid based on a specified packet type
+def retrieve_iid(packet_type):
+    if packet_type == "broadcast":
+        return __BROADCAST_IID
+    elif packet_type == "dhcp":
+        return __DHCP_IID
+    elif packet_type == "ssdp":
+        return __SSDP_IID
+    elif packet_type == "mdns":
+        return __MDNS_IID
+    else:
+        return __MALICIOUSPACKET_IID
+
+# Extracts the payload from the hexdump depending on the status type
+def extract_payload(byte_field, status_type):
+    if status_type == __VEHICLESPEEDSTATUS_STATUS_ID:
+
+        payload = extract_bytes(
+            byte_field,
+            len(byte_field) - __VEHICLESPEEDSTATUS_PAYLOAD_LENGTH,
+            len(byte_field),
+        )
+
+        speed_hex = payload[0:__VEHICLESPEEDSTATUS_SPEED_END_BYTE]
+        speed_decimal = int(speed_hex, 16)
+        return speed_decimal
+
+    payload = extract_bytes(
+        byte_field,
+        len(byte_field) - __DEFAULT_PAYLOAD_LENGTH,
+        len(byte_field),
+    )
+
+    if status_type == __THROTTLESTATUS_STATUS_ID:
+        throttle_demand_hex = payload[0:__THROTTLEPEDALSTATUS_DEMAND_END_BYTE]
+        throttle_demand_decimal = int(throttle_demand_hex, 16)
+        return throttle_demand_decimal
+
+    if status_type == __BRAKESTATUS_STATUS_ID:
+        brake_pressed_hex = payload[0:__BRAKESTATUS_END_BYTE]
+        brake_pressed_decimal = int(brake_pressed_hex, 16)
+        return brake_pressed_decimal
+
+    if status_type == __CRUISECONTROL_STATUS_ID:
+        cruise_control_hex = payload[0:__THROTTLEPEDALSTATUS_DEMAND_END_BYTE]
+        cruise_control_decimal = int(cruise_control_hex, 16)
+        return cruise_control_decimal
+\end{minted}
+\newpage
+\section{DoS Attack Script (Add additional comments to this!)}
+\definecolor{my-bg}{rgb}{0.95,0.95,0.95}
+\begin{minted}[bgcolor=my-bg]{python}
+import socket
+import time
+
+# Input controller IP address
+ip_address = "172.16.0.100"
+# Input controller port
+udp_port = 28191
+message = "This is a DoS attack"
+
+clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+clientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+while True:
+    clientSocket.sendto(message.encode("utf-8"), (ip_address, udp_port))
+    time.sleep(0.5)
+\end{minted}
+\newpage
+\section{Data Collector Source Code}
+\definecolor{my-bg}{rgb}{0.95,0.95,0.95}
+\begin{minted}[bgcolor=my-bg]{python}
+# Define input and output folder paths
+cwd = os.getcwd()
+input_folder_path = os.path.join(cwd, pu.root.get("input"))
+output_folder_path = os.path.join(cwd, pu.root.get("output"))
+
+# Files in their raw form (.pcapng)
+files_to_process = [
+    f
+    for f in os.listdir(input_folder_path)
+    if os.path.isfile(os.path.join(input_folder_path, f))
+    if f.endswith(".pcapng")
+]
+
+# Files that have been already preprocessed (.csv)
+completed = [
+    d
+    for d in os.listdir(output_folder_path)
+    if os.path.isfile(os.path.join(output_folder_path, d))
+    if d.endswith(".csv")
+]
+
+# files_to_process list and completed list are compared, and if a file does not
+# exist in completed, it undergoes parsing and preprocessing
+for the_file in files_to_process:
+    if not pu.check_if_preprocessed(the_file, completed):
+        # Create the dataframes for the different kinds of packets
+        counter = 0
+        master_dict = {}
+
+        # Import the .pcapng file
+        filePath = os.path.join(input_folder_path, the_file)
+        capture = ps.FileCapture(filePath, only_summaries=False, keep_packets=False)
+
+        print("Currently processing: {}".format(the_file))
+        # Iterate though packets and populate the above declared dataframes
+        for packet in capture:
+            packet_dict = {}
+
+            packet_dict["DateTime"] = pd.to_datetime(str(packet.frame_info.time))
+            packet_dict["PacketLength"] = int(packet.frame_info.len)
+            packet_dict["Timestamp"] = float(packet.frame_info.time_relative)
+            packet_dict["TimeDelta"] = float(packet.frame_info.time_delta)
+
+            if pu.check_for_valid(packet):
+                # UDP Layer data extraction and IP layer data extraction
+                packet_dict["SourcePort"] = int(packet.udp.srcport)
+                packet_dict["DestinationPort"] = int(packet.udp.dstport)
+                packet_dict["SourceIP"] = str(packet.ip.src)
+                packet_dict["DestinationIP"] = str(packet.ip.dst)
+
+                # Dissector methods
+                byte_field = packet.udp.payload.split(":")
+                sid = pu.extract_sid(byte_field)
+                iid = pu.extract_iid(byte_field)
+
+                status_type = pu.compute_status_type(sid, iid)
+                packet_dict["StatusType"] = status_type
+                packet_dict["Payload"] = pu.extract_payload(byte_field, status_type)
+
+                master_dict[counter] = packet_dict
+                counter += 1
+
+            elif pu.check_for_broadcast(packet):
+                sid = pu.retrieve_sid("broadcast")
+                iid = pu.retrieve_iid("broadcast")
+
+                # Irrelevant, but kept in for dataframe uniformity
+                packet_dict["SourcePort"] = np.nan
+                packet_dict["DestinationPort"] = np.nan
+                packet_dict["SourceIP"] = np.nan
+                packet_dict["DestinationIP"] = np.nan
+
+                packet_dict["StatusType"] = pu.compute_status_type(sid, iid)
+                packet_dict["Payload"] = np.nan
+
+                master_dict[counter] = packet_dict
+                counter += 1
+
+            elif pu.check_for_dhcp(packet):
+                packet_dict["SourcePort"] = int(packet.udp.srcport)
+                packet_dict["DestinationPort"] = int(packet.udp.dstport)
+                packet_dict["SourceIP"] = str(packet.ip.src)
+                packet_dict["DestinationIP"] = str(packet.ip.dst)
+
+                sid = pu.retrieve_sid("dhcp")
+                iid = pu.retrieve_iid("dhcp")
+
+                packet_dict["StatusType"] = pu.compute_status_type(sid, iid)
+                packet_dict["Payload"] = np.nan
+
+                master_dict[counter] = packet_dict
+                counter += 1
+
+            elif pu.check_for_ssdp(packet):
+                packet_dict["SourcePort"] = int(packet.udp.srcport)
+                packet_dict["DestinationPort"] = int(packet.udp.dstport)
+                packet_dict["SourceIP"] = str(packet.ip.src)
+                packet_dict["DestinationIP"] = str(packet.ip.dst)
+
+                sid = pu.retrieve_sid("ssdp")
+                iid = pu.retrieve_iid("ssdp")
+
+                packet_dict["StatusType"] = pu.compute_status_type(sid, iid)
+                packet_dict["Payload"] = np.nan
+
+                master_dict[counter] = packet_dict
+                counter += 1
+
+            elif pu.check_for_mdns(packet):
+                packet_dict["SourcePort"] = int(packet.udp.srcport)
+                packet_dict["DestinationPort"] = int(packet.udp.dstport)
+                packet_dict["SourceIP"] = np.nan
+                packet_dict["DestinationIP"] = np.nan
+
+                sid = pu.retrieve_sid("mdns")
+                iid = pu.retrieve_iid("mdns")
+
+                packet_dict["StatusType"] = pu.compute_status_type(sid, iid)
+                packet_dict["Payload"] = np.nan
+
+                master_dict[counter] = packet_dict
+                counter += 1
+
+            else:
+                packet_dict["SourcePort"] = np.nan
+                packet_dict["DestinationPort"] = np.nan
+                packet_dict["SourceIP"] = np.nan
+                packet_dict["DestinationIP"] = np.nan
+
+                sid = pu.retrieve_sid("malicious")
+                iid = pu.retrieve_iid("malicious")
+
+                packet_dict["StatusType"] = pu.compute_status_type(sid, iid)
+                packet_dict["Payload"] = np.nan
+
+                master_dict[counter] = packet_dict
+                counter += 1
+
+        capture.close()
+        print("Packets processed: " + str(counter + 1))
+
+        # Write the newly parsed file to the 01_pol_preprocessed directory
+        new_csv_filename = str(os.path.splitext(the_file)[0]) + ".csv"
+        new_csv_path = os.path.join(output_folder_path, new_csv_filename)
+
+        master_df = pd.DataFrame.from_dict(master_dict, orient="index")
+        master_df.to_csv(new_csv_path, index=False)
+\end{minted}
+\section{Feature Extractor Source Code}
+\definecolor{my-bg}{rgb}{0.95,0.95,0.95}
+\begin{minted}[bgcolor=my-bg]{python}
+cwd = os.getcwd()
+input_folder_path = os.path.join(cwd, pu.root.get("preprocess"))
+output_folder_path = os.path.join(cwd, pu.root.get("feature"))
+
+files_to_process = [
+    f
+    for f in os.listdir(input_folder_path)
+    if os.path.isfile(os.path.join(input_folder_path, f))
+    if f.endswith(".csv")
+]
+
+processed = [
+    d
+    for d in os.listdir(output_folder_path)
+    if os.path.isfile(os.path.join(output_folder_path, d))
+    if d.endswith(".csv")
+]
+
+for the_file in files_to_process:
+    if not pu.check_if_preprocessed(the_file, processed):
+        print("Currently processing: {}".format(the_file))
+        file_path = os.path.join(input_folder_path, the_file)
+        df_master = pd.read_csv(file_path)
+
+        master_dict = {}
+        counter = 0
+
+        # 43 is a prime number and should prevent any cyclic patterns
+        number_of_chunks = round(df_master.shape[0] / pu.chunk_size)
+
+        for chunk in np.array_split(df_master, number_of_chunks):
+
+            # Subtract the last timestamp from the first timestamp
+            end_time = chunk.iloc[-1]["Timestamp"]
+            start_time = chunk.iloc[0]["Timestamp"]
+
+            time_window = chunk.iloc[-1]["Timestamp"] - chunk.iloc[0]["Timestamp"]
+            features_dict = {}
+
+            # Timeframe
+            features_dict["TimeWindow"] = time_window
+
+            # Average timestamp for chunk
+            features_dict["Average_Timestamp"] = (
+                chunk.iloc[-1]["Timestamp"] + chunk.iloc[0]["Timestamp"]
+            ) / 2
+
+            # Separate master dataframe into smaller, signal specific dataframes
+            df_speed = chunk[chunk["StatusType"] == "SPEED"]
+            df_throttle = chunk[chunk["StatusType"] == "THROTTLE"]
+            df_brake = chunk[chunk["StatusType"] == "BRAKE"]
+            df_cruise = chunk[chunk["StatusType"] == "CRUISE"]
+            df_broadcast = chunk[chunk["StatusType"] == "B"]
+            df_dhcp = chunk[chunk["StatusType"] == "DHCP"]
+            df_mdns = chunk[chunk["StatusType"] == "MDNS"]
+            df_ssdp = chunk[chunk["StatusType"] == "SSDP"]
+            df_malicious = chunk[chunk["StatusType"] == "M"]
+
+            # Throughputs
+
+            features_dict["TP_Overall"] = chunk["PacketLength"].sum() / time_window
+            features_dict["TP_Speed"] = df_speed["PacketLength"].sum() / time_window
+            features_dict["TP_Throttle"] = (
+                df_throttle["PacketLength"].sum() / time_window
+            )
+            features_dict["TP_Brake"] = df_brake["PacketLength"].sum() / time_window
+            features_dict["TP_Cruise"] = (
+                df_cruise["PacketLength"].sum() / time_window
+            )
+            features_dict["TP_Broadcast"] = (
+                df_broadcast["PacketLength"].sum() / time_window
+            )
+            features_dict["TP_DHCP"] = df_dhcp["PacketLength"].sum() / time_window
+            features_dict["TP_MDNS"] = df_mdns["PacketLength"].sum() / time_window
+            features_dict["TP_SSDP"] = df_ssdp["PacketLength"].sum() / time_window
+            features_dict["TP_Malicious"] = (
+                df_malicious["PacketLength"].sum() / time_window
+            )
+
+            # Average payloads of vehicle speed, throttle, brake and cruise control
+
+            features_dict["VehicleSpeed"] = df_speed["Payload"].mean()
+            features_dict["ThrottleDemand"] = df_throttle["Payload"].mean()
+            features_dict["BrakePressed"] = df_brake["Payload"].mean()
+            features_dict["CruiseDemand"] = df_cruise["Payload"].mean()
+
+            # Behaviour
+            features_dict["Behaviour"] = pu.get_behaviour(
+                features_dict["VehicleSpeed"], features_dict["CruiseDemand"]
+            )
+
+            # Add the populated features_dict to the master_dict with the counter as the key
+            master_dict[counter] = features_dict
+
+            counter += 1
+
+        # Create our Dataframe from the nested dictionary and output to csv
+
+        df_features = pd.DataFrame.from_dict(master_dict, orient="index")
+        new_file_path = os.path.join(output_folder_path, str(the_file))
+        df_features.to_csv(new_file_path, index=False)
+        print("Dataset with {} rows generated.".format(df_features.shape[0]))
+
+\end{minted}
+\end{appendices}

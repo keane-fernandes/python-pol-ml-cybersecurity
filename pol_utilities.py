@@ -5,12 +5,12 @@ Description:    This is a python utility that contains helper methods and consta
                 to aid static.py and live.py in implementing the PoL framework.
 
                 There are six types of statuses:
-                    AA - Broadcast
-                    VS - Vehicle Speed
-                    TP - Throttle Pedal
-                    BS - Brake Status
-                    CC - Cruise Control
-                    XX - Unknown / Malicious
+                    B - Broadcast
+                    SPEED - Vehicle Speed
+                    THROTTLE - Throttle Pedal
+                    BRAKE - Brake Status
+                    CRUISE - Cruise Control
+                    M - Unknown / Malicious
 
 User Iput:      None required.
 Usage:          It is a helper file, cannot be opened directly.

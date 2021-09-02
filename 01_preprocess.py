@@ -21,8 +21,8 @@ import time
 def preprocess():
     # Define input and output folder paths
     cwd = os.getcwd()
-    input_folder_path = os.path.join(cwd, pu.root.get("raw"))
-    output_folder_path = os.path.join(cwd, pu.root.get("preprocess"))
+    input_folder_path = os.path.join(cwd, pu.root.get("input"))
+    output_folder_path = os.path.join(cwd, pu.root.get("output"))
 
     # Files in their raw form (.pcapng)
     files_to_process = [
