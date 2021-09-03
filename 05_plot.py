@@ -30,9 +30,12 @@ def plot_throughputs(input_folder_path, output_folder_path, file_list):
         y4 = df["TP_Brake"]
         y5 = df["TP_Cruise"]
         y6 = df["TP_Malicious"]
+        y7 = df["TP_Broadcast"]
+        y8 = df["VehicleSpeed"]
+        y9 = df["CruiseDemand"]
 
-        fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(
-            6, 1, figsize=(10, 10), sharex=True
+        fig, (ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9) = plt.subplots(
+            9, 1, figsize=(10, 10), sharex=True
         )
 
         ax1.plot(x, y1, c="c", label="Network")
@@ -42,10 +45,10 @@ def plot_throughputs(input_folder_path, output_folder_path, file_list):
         ax2.legend(loc="upper right")
 
         ax3.plot(x, y3, c="b", label="Throttle")
-        ax3.set_ylabel("Throughput (Bytes/second)")
         ax3.legend(loc="upper right")
 
         ax4.plot(x, y4, c="m", label="Brake")
+        ax4.set_ylabel("Throughput (Bytes/second)")
         ax4.legend(loc="upper right")
 
         ax5.plot(x, y5, c="y", label="Cruise")
@@ -53,6 +56,15 @@ def plot_throughputs(input_folder_path, output_folder_path, file_list):
 
         ax6.plot(x, y6, c="r", label="Malicious")
         ax6.legend(loc="upper right")
+
+        ax7.plot(x, y7, c="k", label="Broadcast")
+        ax7.legend(loc="upper right")
+
+        ax8.plot(x, y8, c="c", label="Vehicle Speed (m/s)")
+        ax8.legend(loc="upper right")
+
+        ax9.plot(x, y9, c="g", label="Cruise Demand (Nm)")
+        ax9.legend(loc="upper right")
 
         plt.xlabel("Time (s)")
         plt.tight_layout()
@@ -77,7 +89,7 @@ def plot_throughputs(input_folder_path, output_folder_path, file_list):
 def main():
     # Define input and output folder paths
     cwd = os.getcwd()
-    input_folder_path = os.path.join(cwd, pu.root.get("feature"))
+    input_folder_path = os.path.join(cwd, pu.root.get("output"))
     output_folder_path = os.path.join(cwd, pu.root.get("plot"))
 
     # Files containing features (02_features)

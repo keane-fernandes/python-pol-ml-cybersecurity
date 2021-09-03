@@ -31,7 +31,7 @@ time = 0.0
 capture = ps.LiveCapture(interface="en5", only_summaries=False)
 
 # Iterate though packets and populate the list of packet parameters
-for packet in capture.sniff_continuously(packet_count=150000):
+for packet in capture.sniff_continuously(packet_count=1000):
     spatiotemporal = []
     packet_date_time = str(packet.frame_info.time)
     date = pu.extract_date(packet_date_time)

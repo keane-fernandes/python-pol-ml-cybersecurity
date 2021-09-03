@@ -8,8 +8,8 @@ import numpy as np
 
 def feature():
     cwd = os.getcwd()
-    input_folder_path = os.path.join(cwd, pu.root.get("preprocess"))
-    output_folder_path = os.path.join(cwd, pu.root.get("feature"))
+    input_folder_path = os.path.join(cwd, pu.root.get("input"))
+    output_folder_path = os.path.join(cwd, pu.root.get("output"))
 
     files_to_process = [
         f

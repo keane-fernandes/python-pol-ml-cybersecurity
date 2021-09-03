@@ -151,7 +151,10 @@ def check_for_broadcast(packet):
     if not check_number_of_layers(packet, __DEFAULT_BROADCAST_LAYERS):
         return False
 
-    if not check_for_layers(packet, "eth", "data"):
+    if not (
+        check_for_layers(packet, "eth", "data")
+        or check_for_layers(packet, "eth", "arp")
+    ):
         return False
 
     packet_length = int(packet.frame_info.len)
