@@ -1,5 +1,5 @@
 """"
-Name: preprocess.py
+Name: collect.py
 
 Hardware: Automotive Rig v1.0 from Thales
 
@@ -18,7 +18,7 @@ import os
 import time
 
 
-def preprocess():
+def collect():
     # Define input and output folder paths
     cwd = os.getcwd()
     input_folder_path = os.path.join(cwd, pu.root.get("input"))
@@ -170,7 +170,7 @@ def preprocess():
 
 def main():
     start = time.time()
-    preprocess()
+    collect()
     end = time.time()
     print("Preprocessing layer execution time: " + str(end - start))
 
