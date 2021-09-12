@@ -245,7 +245,7 @@ def calculate_packet_throughput(packets, time):
         return 0
 
 
-# Returns a concatenate string of bytes between start_byte (inclusive) and end_byte (not inclusive)
+# Returns a concatenated string of bytes between start_byte (inclusive) and end_byte (not inclusive)
 def extract_bytes(byte_field, start_byte, end_byte):
     return "".join(byte_field[start_byte:end_byte])
 
