@@ -2,7 +2,7 @@
 
 Hardware:       Automotive Rig v1.0 from Thales
 Description:    This is a python utility that contains helper methods and constants
-                to aid static.py and live.py in implementing the PoL framework.
+                to aid 01_collect.py and 02_feature.py.
 
                 There are six types of statuses:
                     B - Broadcast
@@ -197,22 +197,13 @@ def check_for_layers(packet, *layers):
     return True
 
 
-# Checks that a packet has a specified number of layers
+# Checks that a packet has a specified number of layers returning a boolean
 def check_number_of_layers(packet, number):
     packetLayers = packet.layers
     packetLayersCount = len(packetLayers)
 
     if packetLayersCount != number:
         return False
-    return True
-
-
-# Checks that all attributes exist in a layer
-def check_attributes_in_layer(layer, *attributes):
-    for attribute in attributes:
-        if not hasattr(layer, attribute):
-            return False
-
     return True
 
 
@@ -332,31 +323,6 @@ def extract_payload(byte_field, status_type):
         cruise_control_hex = payload[0:__THROTTLEPEDALSTATUS_DEMAND_END_BYTE]
         cruise_control_decimal = int(cruise_control_hex, 16)
         return cruise_control_decimal
-
-
-# Extract date from a DateTime string from Wireshark
-def extract_date(date_time_string):
-    string = date_time_string[1 : (len(date_time_string) - 1)]
-    string = string.replace(",", "")
-
-    extracted_information = string.split(" ")
-    return "-".join(extracted_information[0:3])
-
-
-# Extract time from a DateTime string from Wireshark
-def extract_time(date_time_string):
-    string = date_time_string[1 : (len(date_time_string) - 1)]
-
-    extracted_information = string.split(" ")
-    return extracted_information[3]
-
-
-# Extract timezone from a DateTime string from Wireshark
-def extract_location(date_time_string):
-    string = date_time_string[1 : (len(date_time_string) - 1)]
-
-    extracted_information = string.split(" ")
-    return extracted_information[4]
 
 
 # ----------------------------------------------------------------

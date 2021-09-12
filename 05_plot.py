@@ -2,24 +2,25 @@
 import os
 import pol_utilities as pu
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 import math
 import pandas as pd
 
-params = {
-    "backend": "ps",
-    "axes.labelsize": 12,
-    "font.size": 12,
-    "legend.fontsize": 10,
-    "xtick.labelsize": 10,
-    "ytick.labelsize": 10,
-    "text.usetex": True,
-}
-
-plt.rcParams.update(params)
-
 
 def plot_throughputs(input_folder_path, output_folder_path, file_list):
+    params = {
+        "backend": "ps",
+        "axes.labelsize": 12,
+        "font.size": 12,
+        "legend.fontsize": 10,
+        "xtick.labelsize": 10,
+        "ytick.labelsize": 10,
+        "text.usetex": True,
+    }
+
+    plt.rcParams.update(params)
+
     for the_file in file_list:
         input_file_path = os.path.join(input_folder_path, the_file)
         df = pd.read_csv(input_file_path)
@@ -86,6 +87,38 @@ def plot_throughputs(input_folder_path, output_folder_path, file_list):
             plt.show()
 
 
+def plot_benchmarks():
+    params = {
+        "backend": "ps",
+        "axes.labelsize": 22,
+        "font.size": 22,
+        "legend.fontsize": 20,
+        "xtick.labelsize": 20,
+        "ytick.labelsize": 20,
+        "text.usetex": True,
+    }
+
+    plt.rcParams.update(params)
+
+    x = [100, 1000, 10000, 100000, 200000]
+    lists = [1.13234, 3.43259, 49.84063, 649.81342, 1241.81342]
+    dicts = [0.81924, 2.70842, 41.73492, 121.95863, 244.59186]
+
+    fig, ax = plt.subplots(1, 1, figsize=(7, 7))
+
+    ax.plot(x, lists, label="Approach 2 - List")
+    ax.plot(x, dicts, label="Approach 3 - Dict")
+    ax.set_xlabel("Number of Packets")
+    ax.set_ylabel("Execution Time (s)")
+    plt.ticklabel_format(style="sci", axis="x", scilimits=(0, 2))
+    plt.ticklabel_format(style="sci", axis="y", scilimits=(0, 2))
+    ax.legend(loc="upper left")
+
+    filepath = "./benchmarks.eps"
+
+    plt.savefig(filepath, format="eps")
+
+
 def main():
     # Define input and output folder paths
     cwd = os.getcwd()
@@ -101,7 +134,8 @@ def main():
     ]
 
     # Plotting functions, comment out as required
-    plot_throughputs(input_folder_path, output_folder_path, files_to_process)
+    # plot_throughputs(input_folder_path, output_folder_path, files_to_process)
+    plot_benchmarks()
 
 
 if __name__ == "__main__":

@@ -16,7 +16,9 @@ test_directory = os.path.join(cwd, pu.root.get("testing"))
 class UtilityChecks(unittest.TestCase):
     def test_extract_bytes(self):
         test_byte_field = "a1:21:23"
-        output = pu.extract_bytes(test_byte_field, 1, 3)
+        output = pu.extract_bytes(test_byte_field, 0, 1)
+        print("\n")
+        print(output)
 
 
 class PacketChecks(unittest.TestCase):
@@ -102,7 +104,7 @@ class DissectorChecks(unittest.TestCase):
         capture = ps.FileCapture(file_path, only_summaries=False)
         packet = capture[0]
         byte_field = packet.udp.payload.split(":")
-        self.assertTrue(0, 0)
+        self.assertEqual(0, 0)
 
 
 if __name__ == "__main__":

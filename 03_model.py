@@ -3,29 +3,21 @@
 This is a python utility to capture packets live over the Automotive Rig v1.0 from Thales.
 The user needs to define only ONE of the following as an argument on the command line:
 
-1. The number of packets 
-
-            OR
-
-2. The timeout in seconds
-
 """
 
 import pyshark as ps
-import collections
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pol_utilities as pu
+import seaborn as sns
+from sklearn.model_selection import cross_val_score
+from sklearn.linear_model import LogisticRegression  #
+from sklearn.model_selection import train_test_split  # split data into two parts
+from sklearn import metrics  # for
+from sklearn.tree import DecisionTreeClassifier
 
 masterPacketList = pd.DataFrame(columns=pu.packet_attributes)
-
-# Behaviour Parameters
-validPackets = 0
-broadcastPackets = 0
-maliciousPackets = 0
-throughput = 0.0  # packets/sec
-time = 0.0
 
 # IMPORTANT : change the interface for your system
 capture = ps.LiveCapture(interface="en5", only_summaries=False)
