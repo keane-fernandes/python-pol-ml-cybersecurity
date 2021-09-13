@@ -31,12 +31,13 @@ def plot_throughputs(input_folder_path, output_folder_path, file_list):
         y4 = df["TP_Brake"]
         y5 = df["TP_Cruise"]
         y6 = df["TP_Malicious"]
-        y7 = df["TP_Broadcast"]
-        y8 = df["VehicleSpeed"]
-        y9 = df["CruiseDemand"]
+        y7 = df["TP_RRCP"]
+        y8 = df["TP_ARP"]
+        y9 = df["TP_NBNS"]
+        y10 = df["TP_LLMNR"]
 
-        fig, (ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9) = plt.subplots(
-            9, 1, figsize=(10, 10), sharex=True
+        fig, (ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9, ax10) = plt.subplots(
+            10, 1, figsize=(10, 12), sharex=True
         )
 
         ax1.plot(x, y1, c="c", label="Network")
@@ -49,23 +50,26 @@ def plot_throughputs(input_folder_path, output_folder_path, file_list):
         ax3.legend(loc="upper right")
 
         ax4.plot(x, y4, c="m", label="Brake")
-        ax4.set_ylabel("Throughput (Bytes/second)")
         ax4.legend(loc="upper right")
 
         ax5.plot(x, y5, c="y", label="Cruise")
+        ax5.set_ylabel("Throughput (Bytes/second)")
         ax5.legend(loc="upper right")
 
         ax6.plot(x, y6, c="r", label="Malicious")
         ax6.legend(loc="upper right")
 
-        ax7.plot(x, y7, c="k", label="Broadcast")
+        ax7.plot(x, y7, c="k", label="RRCP")
         ax7.legend(loc="upper right")
 
-        ax8.plot(x, y8, c="c", label="Vehicle Speed (m/s)")
+        ax8.plot(x, y8, c="c", label="ARP")
         ax8.legend(loc="upper right")
 
-        ax9.plot(x, y9, c="g", label="Cruise Demand (Nm)")
+        ax9.plot(x, y9, c="g", label="NBNS")
         ax9.legend(loc="upper right")
+
+        ax10.plot(x, y10, c="b", label="LLMNR")
+        ax10.legend(loc="upper right")
 
         plt.xlabel("Time (s)")
         plt.tight_layout()
@@ -119,11 +123,12 @@ def plot_benchmarks():
     plt.savefig(filepath, format="eps")
 
 
-def main():
+def main(input_folder_key="feature", output_folder_key="plot"):
+    print("Processing plots ...")
     # Define input and output folder paths
     cwd = os.getcwd()
-    input_folder_path = os.path.join(cwd, pu.root.get("output"))
-    output_folder_path = os.path.join(cwd, pu.root.get("plot"))
+    input_folder_path = os.path.join(cwd, pu.root.get(input_folder_key))
+    output_folder_path = os.path.join(cwd, pu.root.get(output_folder_key))
 
     # Files containing features (02_features)
     files_to_process = [
@@ -134,9 +139,5 @@ def main():
     ]
 
     # Plotting functions, comment out as required
-    # plot_throughputs(input_folder_path, output_folder_path, files_to_process)
-    plot_benchmarks()
-
-
-if __name__ == "__main__":
-    main()
+    plot_throughputs(input_folder_path, output_folder_path, files_to_process)
+    # plot_benchmarks()

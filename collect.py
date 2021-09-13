@@ -18,11 +18,11 @@ import os
 import time
 
 
-def collect():
+def static(input_folder_key, output_folder_key):
     # Define input and output folder paths
     cwd = os.getcwd()
-    input_folder_path = os.path.join(cwd, pu.root.get("input"))
-    output_folder_path = os.path.join(cwd, pu.root.get("output"))
+    input_folder_path = os.path.join(cwd, pu.root.get(input_folder_key))
+    output_folder_path = os.path.join(cwd, pu.root.get(output_folder_key))
 
     # Files in their raw form (.pcapng)
     files_to_process = [
@@ -81,9 +81,9 @@ def collect():
                     master_dict[counter] = packet_dict
                     counter += 1
 
-                elif pu.check_for_broadcast(packet):
-                    sid = pu.retrieve_sid("broadcast")
-                    iid = pu.retrieve_iid("broadcast")
+                elif pu.check_for_rrcp(packet):
+                    sid = pu.retrieve_sid("rrcp")
+                    iid = pu.retrieve_iid("rrcp")
 
                     # Irrelevant, but kept in for dataframe uniformity
                     packet_dict["SourcePort"] = np.nan
@@ -100,8 +100,8 @@ def collect():
                 elif pu.check_for_dhcp(packet):
                     packet_dict["SourcePort"] = int(packet.udp.srcport)
                     packet_dict["DestinationPort"] = int(packet.udp.dstport)
-                    packet_dict["SourceIP"] = str(packet.ip.src)
-                    packet_dict["DestinationIP"] = str(packet.ip.dst)
+                    packet_dict["SourceIP"] = np.nan
+                    packet_dict["DestinationIP"] = np.nan
 
                     sid = pu.retrieve_sid("dhcp")
                     iid = pu.retrieve_iid("dhcp")
@@ -142,6 +142,51 @@ def collect():
                     master_dict[counter] = packet_dict
                     counter += 1
 
+                elif pu.check_for_arp(packet):
+                    packet_dict["SourcePort"] = np.nan
+                    packet_dict["DestinationPort"] = np.nan
+                    packet_dict["SourceIP"] = np.nan
+                    packet_dict["DestinationIP"] = np.nan
+
+                    sid = pu.retrieve_sid("arp")
+                    iid = pu.retrieve_iid("arp")
+
+                    packet_dict["StatusType"] = pu.compute_status_type(sid, iid)
+                    packet_dict["Payload"] = np.nan
+
+                    master_dict[counter] = packet_dict
+                    counter += 1
+
+                elif pu.check_for_nbns(packet):
+                    packet_dict["SourcePort"] = np.nan
+                    packet_dict["DestinationPort"] = np.nan
+                    packet_dict["SourceIP"] = np.nan
+                    packet_dict["DestinationIP"] = np.nan
+
+                    sid = pu.retrieve_sid("nbns")
+                    iid = pu.retrieve_iid("nbns")
+
+                    packet_dict["StatusType"] = pu.compute_status_type(sid, iid)
+                    packet_dict["Payload"] = np.nan
+
+                    master_dict[counter] = packet_dict
+                    counter += 1
+
+                elif pu.check_for_llmnr(packet):
+                    packet_dict["SourcePort"] = np.nan
+                    packet_dict["DestinationPort"] = np.nan
+                    packet_dict["SourceIP"] = np.nan
+                    packet_dict["DestinationIP"] = np.nan
+
+                    sid = pu.retrieve_sid("llmnr")
+                    iid = pu.retrieve_iid("llmnr")
+
+                    packet_dict["StatusType"] = pu.compute_status_type(sid, iid)
+                    packet_dict["Payload"] = np.nan
+
+                    master_dict[counter] = packet_dict
+                    counter += 1
+
                 else:
                     packet_dict["SourcePort"] = np.nan
                     packet_dict["DestinationPort"] = np.nan
@@ -168,12 +213,9 @@ def collect():
             master_df.to_csv(new_csv_path, index=False)
 
 
-def main():
+def main(input_folder_key="raw", output_folder_key="collect"):
+    print("Data collection layer started ...")
     start = time.time()
-    collect()
+    static(input_folder_key, output_folder_key)
     end = time.time()
-    print("Preprocessing layer execution time: " + str(end - start))
-
-
-if __name__ == "__main__":
-    main()
+    print("Data collection layer execution time: " + str(end - start))

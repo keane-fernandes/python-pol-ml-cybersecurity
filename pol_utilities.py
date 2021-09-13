@@ -34,12 +34,16 @@ packet_attributes = [
 # Project folders
 root = {
     "raw": "00_raw",
-    "preprocess": "01_preprocessed",
+    "collect": "01_collect",
     "feature": "02_features",
     "profile": "03_profiles",
     "model": "04_models",
     "plot": "05_plots",
     "testing": "06_testing",
+    "raw_test": "10_raw",
+    "collect_test": "11_collect",
+    "feature_test": "12_feature",
+    "plot_test": "15_plot",
     "input": "98_input",
     "output": "99_output",
 }
@@ -61,11 +65,6 @@ __DEFAULT_FALSE = "00"
 __DEFAULT_TRUE = "01"
 __DEFAULT_LENGTH = 8
 
-# Broadcast Packet
-__BROADCAST_STATUS_ID = "B"
-__BROADCAST_LENGTH = 60
-__BROADCAST_SID = "ffffffff"
-__BROADCAST_IID = "ffffffff"
 
 # Vehicle Speed Status Packet (Packet and UDP lengths are different from default)
 __VEHICLESPEEDSTATUS_STATUS_ID = "SPEED"
@@ -94,26 +93,50 @@ __CRUISECONTROLSTATUS_SID = "aa00ab9b"  # Hexadecimal
 __CRUISECONTROLSTATUS_IID = "55005728"  # Hexadecimal
 __CRUISECONTROL_END_BYTE = 8
 
-# DHCP Packet
-__DHCP_STATUS_ID = "DHCP"
-__DHCP_SID = "eeeeeeee"
-__DHCP_IID = "eeeeeeee"
-__DHCP_LENGTH = 342
+# MDNS Packet
+__MDNS_STATUS_ID = "MDNS"
+__MDNS_SID = "cccccccc"
+__MDNS_IID = "cccccccc"
 
 # SSDP Packet
 __SSDP_STATUS_ID = "SSDP"
 __SSDP_SID = "dddddddd"
 __SSDP_IID = "dddddddd"
-__SSDP_LENGTH = 217
 
-# MDNS Packet
-__MDNS_STATUS_ID = "MDNS"
-__MDNS_SID = "cccccccc"
-__MDNS_IID = "cccccccc"
-# MDNS has varying lengths hence has been omitted
+# DHCP Packet
+__DHCP_STATUS_ID = "DHCP"
+__DHCP_SID = "eeeeeeee"
+__DHCP_IID = "eeeeeeee"
+
+# Broadcast Packet
+__RRCP_STATUS_ID = "RRCP"
+__RRCP_LENGTH = 60
+__RRCP_SID = "ffffffff"
+__RRCP_IID = "ffffffff"
+
+# ARP Packet
+__ARP_STATUS_ID = "ARP"
+__ARP_SID = "gggggggg"
+__ARP_IID = "gggggggg"
+
+# NBNS Packet
+__NBNS_STATUS_ID = "NBNS"
+__NBNS_SID = "hhhhhhhh"
+__NBNS_IID = "hhhhhhhh"
+
+# LLMNR Packet
+__LLMNR_STATUS_ID = "LLMNR"
+__LLMNR_SID = "iiiiiiii"
+__LLMNR_IID = "iiiiiiii"
+
+# Malformed packet
+__MALFORMED_STATUS_ID = "MALFORMED"
+__MALFORMED_SID = "jjjjjjjj"
+__MALFORMED_IID = "jjjjjjjj"
+__MALFORMED_DEFAULT_LAYERS = 5
 
 # Malicious Packet
-__MALICIOUSPACKET_STATUS_ID = "M"
+__MALICIOUSPACKET_STATUS_ID = "MALICIOUS"
 __MALICIOUSPACKET_SID = "mmmmmmmm"
 __MALICIOUSPACKET_IID = "mmmmmmmm"
 
@@ -147,19 +170,16 @@ def check_for_valid(packet):
 
 
 # Checks if a packet matches a broadcast message sent by the input controller
-def check_for_broadcast(packet):
+def check_for_rrcp(packet):
     if not check_number_of_layers(packet, __DEFAULT_BROADCAST_LAYERS):
         return False
 
-    if not (
-        check_for_layers(packet, "eth", "data")
-        or check_for_layers(packet, "eth", "arp")
-    ):
+    if not check_for_layers(packet, "eth", "data"):
         return False
 
     packet_length = int(packet.frame_info.len)
 
-    if packet_length != __BROADCAST_LENGTH:
+    if packet_length != __RRCP_LENGTH:
         return False
 
     return True
@@ -167,7 +187,7 @@ def check_for_broadcast(packet):
 
 # Checks if a packet is sent using the DHCP packet in the network
 def check_for_dhcp(packet):
-    if check_for_layers(packet, "dhcp"):
+    if check_for_layers(packet, "dhcp") or check_for_layers(packet, "dhcpv6"):
         return True
 
     return False
@@ -187,6 +207,37 @@ def check_for_mdns(packet):
         return True
 
     return False
+
+
+def check_for_arp(packet):
+    if check_for_layers(packet, "arp"):
+        return True
+
+    return False
+
+
+def check_for_nbns(packet):
+    if check_for_layers(packet, "nbns"):
+        return True
+
+    return False
+
+
+def check_for_llmnr(packet):
+    if check_for_layers(packet, "llmnr"):
+        return True
+
+    return False
+
+
+def check_for_malformed(packet):
+    if not check_number_of_layers(packet, __MALFORMED_DEFAULT_LAYERS):
+        return False
+
+    if not check_for_layers(packet, "eth", "udp", "ip", "classicstun", "_ws.malformed"):
+        return False
+
+    return True
 
 
 # Checks that layers exist in a packet
@@ -221,8 +272,8 @@ def compute_status_type(sid, iid):
     if sid == __CRUISECONTROLSTATUS_SID and iid == __CRUISECONTROLSTATUS_IID:
         return __CRUISECONTROL_STATUS_ID
 
-    if sid == __BROADCAST_SID and iid == __BROADCAST_IID:
-        return __BROADCAST_STATUS_ID
+    if sid == __RRCP_SID and iid == __RRCP_IID:
+        return __RRCP_STATUS_ID
 
     if sid == __DHCP_SID and iid == __DHCP_IID:
         return __DHCP_STATUS_ID
@@ -232,6 +283,18 @@ def compute_status_type(sid, iid):
 
     if sid == __MDNS_SID and iid == __MDNS_IID:
         return __MDNS_STATUS_ID
+
+    if sid == __ARP_SID and iid == __ARP_IID:
+        return __ARP_STATUS_ID
+
+    if sid == __NBNS_SID and iid == __NBNS_IID:
+        return __NBNS_STATUS_ID
+
+    if sid == __LLMNR_SID and iid == __LLMNR_IID:
+        return __LLMNR_STATUS_ID
+
+    if sid == __MALFORMED_SID and iid == __MALFORMED_IID:
+        return __MALFORMED_STATUS_ID
 
     return __MALICIOUSPACKET_STATUS_ID
 
@@ -263,28 +326,44 @@ def extract_iid(byte_field):
 # Returns an sid based on a specified packet type
 def retrieve_sid(packet_type):
 
-    if packet_type == "broadcast":
-        return __BROADCAST_SID
+    if packet_type == "rrcp":
+        return __RRCP_SID
     elif packet_type == "dhcp":
         return __DHCP_SID
     elif packet_type == "ssdp":
         return __SSDP_SID
     elif packet_type == "mdns":
         return __MDNS_SID
+    elif packet_type == "arp":
+        return __ARP_SID
+    elif packet_type == "nbns":
+        return __NBNS_SID
+    elif packet_type == "llmnr":
+        return __LLMNR_SID
+    elif packet_type == "malformed":
+        return __MALFORMED_SID
     else:
         return __MALICIOUSPACKET_SID
 
 
 # Returns an iid based on a specified packet type
 def retrieve_iid(packet_type):
-    if packet_type == "broadcast":
-        return __BROADCAST_IID
+    if packet_type == "rrcp":
+        return __RRCP_IID
     elif packet_type == "dhcp":
         return __DHCP_IID
     elif packet_type == "ssdp":
         return __SSDP_IID
     elif packet_type == "mdns":
         return __MDNS_IID
+    elif packet_type == "arp":
+        return __ARP_IID
+    elif packet_type == "nbns":
+        return __NBNS_IID
+    elif packet_type == "llmnr":
+        return __LLMNR_IID
+    elif packet_type == "malformed":
+        return __MALFORMED_IID
     else:
         return __MALICIOUSPACKET_IID
 
@@ -329,7 +408,7 @@ def extract_payload(byte_field, status_type):
 # Feature Extraction
 # ----------------------------------------------------------------
 
-chunk_size = 43
+chunk_size = 23
 
 
 def get_behaviour(vehicle_speed, cruise_demand):

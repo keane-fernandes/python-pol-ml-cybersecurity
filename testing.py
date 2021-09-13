@@ -67,11 +67,11 @@ class PacketChecks(unittest.TestCase):
         self.assertTrue(pu.check_for_valid(packet))
         capture.close()
 
-    def test_broadcast(self):
+    def test_rrcpt(self):
         file_path = os.path.join(test_directory, "rrcp.pcapng")
         capture = ps.FileCapture(file_path, only_summaries=False)
         packet = capture[0]
-        self.assertTrue(pu.check_for_broadcast(packet))
+        self.assertTrue(pu.check_for_rrcp(packet))
         capture.close()
 
     def test_dhcp(self):
@@ -80,6 +80,13 @@ class PacketChecks(unittest.TestCase):
         packet = capture[0]
         self.assertTrue(pu.check_number_of_layers(packet, 4))
         self.assertTrue(pu.check_for_layers(packet, "dhcp"))
+        capture.close()
+
+        file_path = os.path.join(test_directory, "dhcpv6.pcapng")
+        capture = ps.FileCapture(file_path, only_summaries=False)
+        packet = capture[0]
+        self.assertTrue(pu.check_number_of_layers(packet, 4))
+        self.assertTrue(pu.check_for_layers(packet, "dhcpv6"))
         capture.close()
 
     def test_mdns(self):
@@ -99,12 +106,59 @@ class PacketChecks(unittest.TestCase):
         capture.close()
 
     def test_arp(self):
-        # Check number of layers in all kinds of packets
         file_path = os.path.join(test_directory, "arp.pcapng")
         capture = ps.FileCapture(file_path, only_summaries=False)
         packet = capture[0]
-        self.assertTrue(pu.check_number_of_layers(packet, 2))
-        self.assertTrue(pu.check_for_layers(packet, "arp"))
+        self.assertTrue(pu.check_for_arp(packet))
+        self.assertEqual(pu.retrieve_sid("arp"), "gggggggg")
+        self.assertEqual(pu.retrieve_iid("arp"), "gggggggg")
+        self.assertEqual(
+            pu.compute_status_type(pu.retrieve_sid("arp"), pu.retrieve_iid("arp")),
+            "ARP",
+        )
+        capture.close()
+
+    def test_nbns(self):
+        file_path = os.path.join(test_directory, "nbns.pcapng")
+        capture = ps.FileCapture(file_path, only_summaries=False)
+        packet = capture[0]
+        self.assertTrue(pu.check_for_nbns(packet))
+        self.assertEqual(pu.retrieve_sid("nbns"), "hhhhhhhh")
+        self.assertEqual(pu.retrieve_iid("nbns"), "hhhhhhhh")
+        self.assertEqual(
+            pu.compute_status_type(pu.retrieve_sid("nbns"), pu.retrieve_iid("nbns")),
+            "NBNS",
+        )
+        capture.close()
+
+    def test_llmnr(self):
+        file_path = os.path.join(test_directory, "llmnr.pcapng")
+        capture = ps.FileCapture(file_path, only_summaries=False)
+        packet = capture[0]
+        self.assertTrue(pu.check_for_llmnr(packet))
+        self.assertEqual(pu.retrieve_sid("llmnr"), "iiiiiiii")
+        self.assertEqual(pu.retrieve_iid("llmnr"), "iiiiiiii")
+        self.assertEqual(
+            pu.compute_status_type(pu.retrieve_sid("llmnr"), pu.retrieve_iid("llmnr")),
+            "LLMNR",
+        )
+        capture.close()
+
+    # ==================================================================================
+
+    def test_malformed(self):
+        file_path = os.path.join(test_directory, "malformed.pcapng")
+        capture = ps.FileCapture(file_path, only_summaries=False)
+        packet = capture[0]
+        self.assertTrue(pu.check_for_malformed(packet))
+        self.assertEqual(pu.retrieve_sid("malformed"), "jjjjjjjj")
+        self.assertEqual(pu.retrieve_iid("malformed"), "jjjjjjjj")
+        self.assertEqual(
+            pu.compute_status_type(
+                pu.retrieve_sid("malformed"), pu.retrieve_iid("malformed")
+            ),
+            "MALFORMED",
+        )
         capture.close()
 
 

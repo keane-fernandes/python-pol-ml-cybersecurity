@@ -179,9 +179,17 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-test.py
+sample.py
+inspect_dataframe.py
+inspect_packet.py
 
 # CSV files
 97_garbage/
 98_input/
 99_output/
+
+# Test Folders
+10_raw/
+11_collect/
+12_feature/
+15_plot/

@@ -6,10 +6,10 @@ import time
 import numpy as np
 
 
-def feature():
+def feature(input_folder_key, output_folder_key):
     cwd = os.getcwd()
-    input_folder_path = os.path.join(cwd, pu.root.get("input"))
-    output_folder_path = os.path.join(cwd, pu.root.get("output"))
+    input_folder_path = os.path.join(cwd, pu.root.get(input_folder_key))
+    output_folder_path = os.path.join(cwd, pu.root.get(output_folder_key))
 
     files_to_process = [
         f
@@ -34,16 +34,16 @@ def feature():
             master_dict = {}
             counter = 0
 
-            # 43 is a prime number and should prevent any cyclic patterns
+            # 23 is a prime number and should prevent any cyclic patterns
             number_of_chunks = round(df_master.shape[0] / pu.chunk_size)
 
             for chunk in np.array_split(df_master, number_of_chunks):
 
                 # Subtract the last timestamp from the first timestamp
-                end_time = chunk.iloc[-1]["Timestamp"]
                 start_time = chunk.iloc[0]["Timestamp"]
+                end_time = chunk.iloc[-1]["Timestamp"]
 
-                time_window = chunk.iloc[-1]["Timestamp"] - chunk.iloc[0]["Timestamp"]
+                time_window = end_time - start_time
                 features_dict = {}
 
                 # Timeframe
@@ -59,11 +59,15 @@ def feature():
                 df_throttle = chunk[chunk["StatusType"] == "THROTTLE"]
                 df_brake = chunk[chunk["StatusType"] == "BRAKE"]
                 df_cruise = chunk[chunk["StatusType"] == "CRUISE"]
-                df_broadcast = chunk[chunk["StatusType"] == "B"]
+                df_rrcp = chunk[chunk["StatusType"] == "RRCP"]
                 df_dhcp = chunk[chunk["StatusType"] == "DHCP"]
                 df_mdns = chunk[chunk["StatusType"] == "MDNS"]
                 df_ssdp = chunk[chunk["StatusType"] == "SSDP"]
-                df_malicious = chunk[chunk["StatusType"] == "M"]
+                df_arp = chunk[chunk["StatusType"] == "ARP"]
+                df_nbns = chunk[chunk["StatusType"] == "NBNS"]
+                df_llmnr = chunk[chunk["StatusType"] == "LLMNR"]
+                df_malformed = chunk[chunk["StatusType"] == "MALFORMED"]
+                df_malicious = chunk[chunk["StatusType"] == "MALICIOUS"]
 
                 # Throughputs
 
@@ -76,14 +80,18 @@ def feature():
                 features_dict["TP_Cruise"] = (
                     df_cruise["PacketLength"].sum() / time_window
                 )
-                features_dict["TP_Broadcast"] = (
-                    df_broadcast["PacketLength"].sum() / time_window
-                )
+                features_dict["TP_RRCP"] = df_rrcp["PacketLength"].sum() / time_window
                 features_dict["TP_DHCP"] = df_dhcp["PacketLength"].sum() / time_window
                 features_dict["TP_MDNS"] = df_mdns["PacketLength"].sum() / time_window
                 features_dict["TP_SSDP"] = df_ssdp["PacketLength"].sum() / time_window
                 features_dict["TP_Malicious"] = (
                     df_malicious["PacketLength"].sum() / time_window
+                )
+                features_dict["TP_ARP"] = df_arp["PacketLength"].sum() / time_window
+                features_dict["TP_NBNS"] = df_nbns["PacketLength"].sum() / time_window
+                features_dict["TP_LLMNR"] = df_llmnr["PacketLength"].sum() / time_window
+                features_dict["TP_MALFORMED"] = (
+                    df_malformed["PacketLength"].sum() / time_window
                 )
 
                 # Average payloads of vehicle speed, throttle, brake and cruise control
@@ -111,9 +119,10 @@ def feature():
             print("Dataset with {} rows generated.".format(df_features.shape[0]))
 
 
-def main():
+def main(input_folder_key="collect", output_folder_key="feature"):
+    print("Feature extraction layer started ...")
     start = time.time()
-    feature()
+    feature(input_folder_key, output_folder_key)
     end = time.time()
     print("Feature layer execution time: " + str(end - start))
 
