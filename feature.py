@@ -90,7 +90,7 @@ def feature(input_folder_key, output_folder_key):
                 features_dict["TP_ARP"] = df_arp["PacketLength"].sum() / time_window
                 features_dict["TP_NBNS"] = df_nbns["PacketLength"].sum() / time_window
                 features_dict["TP_LLMNR"] = df_llmnr["PacketLength"].sum() / time_window
-                features_dict["TP_MALFORMED"] = (
+                features_dict["TP_Malformed"] = (
                     df_malformed["PacketLength"].sum() / time_window
                 )
 

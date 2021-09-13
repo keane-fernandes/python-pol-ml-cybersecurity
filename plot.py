@@ -11,7 +11,7 @@ import pandas as pd
 def plot_throughputs(input_folder_path, output_folder_path, file_list):
     params = {
         "backend": "ps",
-        "axes.labelsize": 12,
+        "axes.labelsize": 20,
         "font.size": 12,
         "legend.fontsize": 10,
         "xtick.labelsize": 10,
@@ -35,41 +35,56 @@ def plot_throughputs(input_folder_path, output_folder_path, file_list):
         y8 = df["TP_ARP"]
         y9 = df["TP_NBNS"]
         y10 = df["TP_LLMNR"]
+        y11 = df["TP_Malformed"]
 
-        fig, (ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9, ax10) = plt.subplots(
-            10, 1, figsize=(10, 12), sharex=True
+        fig, (ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9, ax10, ax11) = plt.subplots(
+            11, 1, figsize=(10, 14), sharex=True
         )
 
         ax1.plot(x, y1, c="c", label="Network")
+        ax1.set_ylim(bottom=0)
         ax1.legend(loc="upper right")
 
         ax2.plot(x, y2, c="g", label="Speed")
+        ax2.set_ylim(bottom=0)
         ax2.legend(loc="upper right")
 
         ax3.plot(x, y3, c="b", label="Throttle")
+        ax3.set_ylim(bottom=0)
         ax3.legend(loc="upper right")
 
         ax4.plot(x, y4, c="m", label="Brake")
+        ax4.set_ylim(bottom=0)
         ax4.legend(loc="upper right")
 
         ax5.plot(x, y5, c="y", label="Cruise")
+        ax5.set_ylim(bottom=0)
         ax5.set_ylabel("Throughput (Bytes/second)")
         ax5.legend(loc="upper right")
 
         ax6.plot(x, y6, c="r", label="Malicious")
+        ax6.set_ylim(bottom=0)
         ax6.legend(loc="upper right")
 
         ax7.plot(x, y7, c="k", label="RRCP")
+        ax7.set_ylim(bottom=0)
         ax7.legend(loc="upper right")
 
         ax8.plot(x, y8, c="c", label="ARP")
+        ax8.set_ylim(bottom=0)
         ax8.legend(loc="upper right")
 
         ax9.plot(x, y9, c="g", label="NBNS")
+        ax9.set_ylim(bottom=0)
         ax9.legend(loc="upper right")
 
         ax10.plot(x, y10, c="b", label="LLMNR")
+        ax10.set_ylim(bottom=0)
         ax10.legend(loc="upper right")
+
+        ax11.plot(x, y11, c="m", label="Malformed")
+        ax11.set_ylim(bottom=0)
+        ax11.legend(loc="upper right")
 
         plt.xlabel("Time (s)")
         plt.tight_layout()
@@ -82,6 +97,8 @@ def plot_throughputs(input_folder_path, output_folder_path, file_list):
 
         plt.savefig(output_file_path_eps, format="eps")
         plt.savefig(output_file_path_png, format="png")
+
+        plt.close(fig)
 
         if False:
             output_file_path = os.path.join(output_folder_path, output_file_name)

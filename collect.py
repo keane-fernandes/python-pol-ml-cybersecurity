@@ -187,6 +187,21 @@ def static(input_folder_key, output_folder_key):
                     master_dict[counter] = packet_dict
                     counter += 1
 
+                elif pu.check_for_malformed(packet):
+                    packet_dict["SourcePort"] = np.nan
+                    packet_dict["DestinationPort"] = np.nan
+                    packet_dict["SourceIP"] = np.nan
+                    packet_dict["DestinationIP"] = np.nan
+
+                    sid = pu.retrieve_sid("malformed")
+                    iid = pu.retrieve_iid("malformed")
+
+                    packet_dict["StatusType"] = pu.compute_status_type(sid, iid)
+                    packet_dict["Payload"] = np.nan
+
+                    master_dict[counter] = packet_dict
+                    counter += 1
+
                 else:
                     packet_dict["SourcePort"] = np.nan
                     packet_dict["DestinationPort"] = np.nan
