@@ -70,7 +70,6 @@ def feature(input_folder_key, output_folder_key):
                 df_malicious = chunk[chunk["StatusType"] == "MALICIOUS"]
 
                 # Throughputs
-
                 features_dict["TP_Overall"] = chunk["PacketLength"].sum() / time_window
                 features_dict["TP_Speed"] = df_speed["PacketLength"].sum() / time_window
                 features_dict["TP_Throttle"] = (
