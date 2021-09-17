@@ -22,165 +22,17 @@ from sklearn.metrics import (
     recall_score,
     f1_score,
 )
-
-
-def get_thresholds(dataframe):
-    pass
-
-
-def prepare_attack_data():
-    cwd = os.getcwd()
-    folder_path = os.path.join(cwd, pu.root.get("train"))
-    processing_folder_path = os.path.join(folder_path, "attack")
-
-    files_to_process = [
-        f
-        for f in os.listdir(processing_folder_path)
-        if os.path.isfile(os.path.join(processing_folder_path, f))
-        if f.endswith(".csv")
-    ]
-
-    frames = []
-
-    for the_file in files_to_process:
-        file_path = os.path.join(processing_folder_path, the_file)
-        dataset = pd.read_csv(file_path)
-
-        arp_start = dataset[dataset["TP_ARP"] != 0].head(1).index.values[0]
-        malicious_start = dataset[dataset["TP_Malicious"] != 0].head(1).index.values[0]
-
-        attack_index = arp_start
-
-        if malicious_start < arp_start:
-            attack_index = malicious_start
-
-        dataset.loc[dataset.index < attack_index, "Attack"] = 0
-        dataset.loc[dataset.index >= attack_index, "Attack"] = 1
-
-        dataset["Attack"] = dataset["Attack"].astype(int)
-
-        dataset_training = dataset[
-            [
-                "TP_Overall",
-                "TP_Speed",
-                "TP_Throttle",
-                "TP_Brake",
-                "TP_Cruise",
-                "TP_RRCP",
-                "TP_Malicious",
-                "TP_ARP",
-                "VehicleSpeed",
-                "ThrottleDemand",
-                "BrakePressed",
-                "CruiseDemand",
-                "Attack",
-            ]
-        ]
-
-        frames.append(dataset_training)
-
-    # Output concatenated dataframe
-    result = pd.concat(frames)
-    output_file_path = os.path.join(folder_path, "attack_master_training.csv")
-    result.to_csv(output_file_path, index=False)
-
-
-def prepare_baseline_data():
-    # Cruise data
-    cwd = os.getcwd()
-    input_folder_path = os.path.join(cwd, pu.root.get("train"))
-    cruising_path = os.path.join(input_folder_path, "cruising")
-    cruising_file_path = os.path.join(cruising_path, "CC_master.csv")
-
-    dataset = pd.read_csv(cruising_file_path)
-    dataset["Attack"] = 0
-    dataset_training = dataset[
-        [
-            "TP_Overall",
-            "TP_Speed",
-            "TP_Throttle",
-            "TP_Brake",
-            "TP_Cruise",
-            "TP_RRCP",
-            "TP_Malicious",
-            "TP_ARP",
-            "VehicleSpeed",
-            "ThrottleDemand",
-            "BrakePressed",
-            "CruiseDemand",
-            "Attack",
-        ]
-    ]
-
-    output_file_path = os.path.join(input_folder_path, "CC_master_training.csv")
-    dataset_training.to_csv(output_file_path, index=False)
-
-    # Not Cruise data
-    cwd = os.getcwd()
-    input_folder_path = os.path.join(cwd, pu.root.get("train"))
-    cruising_path = os.path.join(input_folder_path, "not_cruising")
-    cruising_file_path = os.path.join(cruising_path, "no_CC_master.csv")
-
-    dataset = pd.read_csv(cruising_file_path)
-    dataset["Attack"] = 0
-    dataset_training = dataset[
-        [
-            "TP_Overall",
-            "TP_Speed",
-            "TP_Throttle",
-            "TP_Brake",
-            "TP_Cruise",
-            "TP_RRCP",
-            "TP_Malicious",
-            "TP_ARP",
-            "VehicleSpeed",
-            "ThrottleDemand",
-            "BrakePressed",
-            "CruiseDemand",
-            "Attack",
-        ]
-    ]
-
-    output_file_path = os.path.join(input_folder_path, "no_CC_master_training.csv")
-    dataset_training.to_csv(output_file_path, index=False)
-
-
-def merge_training_data():
-    cwd = os.getcwd()
-    input_folder_path = os.path.join(cwd, pu.root.get("train"))
-
-    files_to_process = [
-        f
-        for f in os.listdir(input_folder_path)
-        if os.path.isfile(os.path.join(input_folder_path, f))
-        if f.endswith(".csv")
-    ]
-
-    frames = []
-
-    for the_file in files_to_process:
-        file_path = os.path.join(input_folder_path, the_file)
-        dataset = pd.read_csv(file_path)
-        frames.append(dataset)
-
-    training_data = pd.concat(frames)
-
-    output_file_path = os.path.join(input_folder_path, "MASTER.csv")
-    training_data.to_csv(output_file_path, index=False)
-
-    if False:
-        output_file_path = os.path.join(input_folder_path, "MASTER.csv")
-        training_data.to_csv(output_file_path, index=False)
+from sklearn.model_selection import cross_val_score
 
 
 def run_lr():
     cwd = os.getcwd()
     input_folder_path = os.path.join(cwd, pu.root.get("train"))
-    input_file_path = os.path.join(input_folder_path, "MASTER.csv")
+    input_file_path = os.path.join(input_folder_path, "TRAINING.csv")
 
     dataset = pd.read_csv(input_file_path)
 
-    X = dataset.iloc[:, :7].values
+    X = dataset.iloc[:, :-1].values
     y = dataset.iloc[:, -1].values
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -211,8 +63,6 @@ def run_lr():
     print("F-Measure: %.3f" % score)
 
     # Applying k-Fold Cross Validation
-    from sklearn.model_selection import cross_val_score
-
     accuracies = cross_val_score(estimator=classifier, X=X_train, y=y_train, cv=10)
     print("Accuracy: {:.2f} %".format(accuracies.mean() * 100))
     print("Standard Deviation: {:.2f} %".format(accuracies.std() * 100))
@@ -221,10 +71,10 @@ def run_lr():
 def run_knn():
     cwd = os.getcwd()
     input_folder_path = os.path.join(cwd, pu.root.get("train"))
-    input_file_path = os.path.join(input_folder_path, "MASTER.csv")
+    input_file_path = os.path.join(input_folder_path, "TRAINING.csv")
 
     dataset = pd.read_csv(input_file_path)
-    X = dataset.iloc[:, 4:7].values
+    X = dataset.iloc[:, :-1].values
     y = dataset.iloc[:, -1].values
 
     # Splitting the dataset into the Training set and Test set
@@ -265,14 +115,19 @@ def run_knn():
     print("Accuracy: {:.2f} %".format(accuracies.mean() * 100))
     print("Standard Deviation: {:.2f} %".format(accuracies.std() * 100))
 
+    # Applying k-Fold Cross Validation
+    accuracies = cross_val_score(estimator=classifier, X=X_train, y=y_train, cv=10)
+    print("Accuracy: {:.2f} %".format(accuracies.mean() * 100))
+    print("Standard Deviation: {:.2f} %".format(accuracies.std() * 100))
+
 
 def run_svm():
     cwd = os.getcwd()
     input_folder_path = os.path.join(cwd, pu.root.get("train"))
-    input_file_path = os.path.join(input_folder_path, "MASTER.csv")
+    input_file_path = os.path.join(input_folder_path, "TRAINING.csv")
 
     dataset = pd.read_csv(input_file_path)
-    X = dataset.iloc[:, 4:7].values
+    X = dataset.iloc[:, :-1].values
     y = dataset.iloc[:, -1].values
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -301,14 +156,19 @@ def run_svm():
     score = f1_score(y_test, y_pred, average="binary")
     print("F-Measure: %.3f" % score)
 
+    # Applying k-Fold Cross Validation
+    accuracies = cross_val_score(estimator=classifier, X=X_train, y=y_train, cv=10)
+    print("Accuracy: {:.2f} %".format(accuracies.mean() * 100))
+    print("Standard Deviation: {:.2f} %".format(accuracies.std() * 100))
+
 
 def run_kernel_svm():
     cwd = os.getcwd()
     input_folder_path = os.path.join(cwd, pu.root.get("train"))
-    input_file_path = os.path.join(input_folder_path, "MASTER.csv")
+    input_file_path = os.path.join(input_folder_path, "TRAINING.csv")
 
     dataset = pd.read_csv(input_file_path)
-    X = dataset.iloc[:, 4:7].values
+    X = dataset.iloc[:, :-1].values
     y = dataset.iloc[:, -1].values
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -336,14 +196,19 @@ def run_kernel_svm():
     score = f1_score(y_test, y_pred, average="binary")
     print("F-Measure: %.3f" % score)
 
+    # Applying k-Fold Cross Validation
+    accuracies = cross_val_score(estimator=classifier, X=X_train, y=y_train, cv=10)
+    print("Accuracy: {:.2f} %".format(accuracies.mean() * 100))
+    print("Standard Deviation: {:.2f} %".format(accuracies.std() * 100))
+
 
 def run_nb():
     cwd = os.getcwd()
     input_folder_path = os.path.join(cwd, pu.root.get("train"))
-    input_file_path = os.path.join(input_folder_path, "MASTER.csv")
+    input_file_path = os.path.join(input_folder_path, "TRAINING.csv")
 
     dataset = pd.read_csv(input_file_path)
-    X = dataset.iloc[:, 4:7].values
+    X = dataset.iloc[:, :-1].values
     y = dataset.iloc[:, -1].values
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -372,14 +237,19 @@ def run_nb():
     score = f1_score(y_test, y_pred, average="binary")
     print("F-Measure: %.3f" % score)
 
+    # Applying k-Fold Cross Validation
+    accuracies = cross_val_score(estimator=classifier, X=X_train, y=y_train, cv=10)
+    print("Accuracy: {:.2f} %".format(accuracies.mean() * 100))
+    print("Standard Deviation: {:.2f} %".format(accuracies.std() * 100))
+
 
 def run_dtc():
     cwd = os.getcwd()
     input_folder_path = os.path.join(cwd, pu.root.get("train"))
-    input_file_path = os.path.join(input_folder_path, "MASTER.csv")
+    input_file_path = os.path.join(input_folder_path, "TRAINING.csv")
 
     dataset = pd.read_csv(input_file_path)
-    X = dataset.iloc[:, 4:7].values
+    X = dataset.iloc[:, :-1].values
     y = dataset.iloc[:, -1].values
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -407,14 +277,19 @@ def run_dtc():
     score = f1_score(y_test, y_pred, average="binary")
     print("F-Measure: %.3f" % score)
 
+    # Applying k-Fold Cross Validation
+    accuracies = cross_val_score(estimator=classifier, X=X_train, y=y_train, cv=10)
+    print("Accuracy: {:.2f} %".format(accuracies.mean() * 100))
+    print("Standard Deviation: {:.2f} %".format(accuracies.std() * 100))
+
 
 def run_rfc():
     cwd = os.getcwd()
     input_folder_path = os.path.join(cwd, pu.root.get("train"))
-    input_file_path = os.path.join(input_folder_path, "MASTER.csv")
+    input_file_path = os.path.join(input_folder_path, "TRAINING.csv")
 
     dataset = pd.read_csv(input_file_path)
-    X = dataset.iloc[:, 4:7].values
+    X = dataset.iloc[:, :-1].values
     y = dataset.iloc[:, -1].values
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -444,14 +319,19 @@ def run_rfc():
     score = f1_score(y_test, y_pred, average="binary")
     print("F-Measure: %.3f" % score)
 
+    # Applying k-Fold Cross Validation
+    accuracies = cross_val_score(estimator=classifier, X=X_train, y=y_train, cv=10)
+    print("Accuracy: {:.2f} %".format(accuracies.mean() * 100))
+    print("Standard Deviation: {:.2f} %".format(accuracies.std() * 100))
+
 
 def run_xgboost():
     cwd = os.getcwd()
     input_folder_path = os.path.join(cwd, pu.root.get("train"))
-    input_file_path = os.path.join(input_folder_path, "MASTER.csv")
+    input_file_path = os.path.join(input_folder_path, "TRAINING.csv")
 
     dataset = pd.read_csv(input_file_path)
-    X = dataset.iloc[:, :7].values
+    X = dataset.iloc[:, :-1].values
     y = dataset.iloc[:, -1].values
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -479,47 +359,56 @@ def run_xgboost():
     score = f1_score(y_test, y_pred, average="binary")
     print("F-Measure: %.3f" % score)
 
+    accuracies = cross_val_score(estimator=classifier, X=X_train, y=y_train, cv=10)
+    print("Accuracy: {:.2f} %".format(accuracies.mean() * 100))
+    print("Standard Deviation: {:.2f} %".format(accuracies.std() * 100))
+
+    # Applying k-Fold Cross Validation
+    accuracies = cross_val_score(estimator=classifier, X=X_train, y=y_train, cv=10)
+    print("Accuracy: {:.2f} %".format(accuracies.mean() * 100))
+    print("Standard Deviation: {:.2f} %".format(accuracies.std() * 100))
+
 
 if __name__ == "__main__":
-    merge_training_data()
+    print("Logistic Regression started ...")
+    start = time.time()
+    run_lr()
+    end = time.time()
+    print("Logistic Regression time: " + str(end - start))
+    print("KNN started ...")
+    start = time.time()
+    run_knn()
+    end = time.time()
+    print("KNN time: " + str(end - start))
+    print("SVM started ...")
+    start = time.time()
+    run_svm()
+    end = time.time()
+    print("SVM time: " + str(end - start))
+    print("Kernel SVM started ...")
+    start = time.time()
+    run_kernel_svm()
+    end = time.time()
+    print("Kernel SVM time: " + str(end - start))
+    print("Naive Bayes started ...")
+    start = time.time()
+    run_nb()
+    end = time.time()
+    print("Naive Bayes time: " + str(end - start))
+    print("Decision Tree Classification started ...")
+    start = time.time()
+    run_dtc()
+    end = time.time()
+    print("Decision Tree Classification Time: " + str(end - start))
+    print("Random Forest Classification started ...")
+    start = time.time()
+    run_rfc()
+    end = time.time()
+    print("Random Forest Classification Time: " + str(end - start))
+
     if False:
         print("XGBoost started ...")
         start = time.time()
         run_xgboost()
         end = time.time()
         print("XGBoost time: " + str(end - start))
-        print("Logistic Regression started ...")
-        start = time.time()
-        run_lr()
-        end = time.time()
-        print("Logistic Regression time: " + str(end - start))
-        print("KNN started ...")
-        start = time.time()
-        run_knn()
-        end = time.time()
-        print("KNN time: " + str(end - start))
-        print("SVM started ...")
-        start = time.time()
-        run_svm()
-        end = time.time()
-        print("SVM time: " + str(end - start))
-        print("Kernel SVM started ...")
-        start = time.time()
-        run_kernel_svm()
-        end = time.time()
-        print("Kernel SVM time: " + str(end - start))
-        print("Naive Bayes started ...")
-        start = time.time()
-        run_nb()
-        end = time.time()
-        print("Naive Bayes time: " + str(end - start))
-        print("Decision Tree Classification started ...")
-        start = time.time()
-        run_dtc()
-        end = time.time()
-        print("Decision Tree Classification Time: " + str(end - start))
-        print("Random Forest Classification started ...")
-        start = time.time()
-        run_rfc()
-        end = time.time()
-        print("Random Forest Classification Time: " + str(end - start))
