@@ -39,6 +39,11 @@ root = {
     "train": "03_train",
     "plot": "05_plots",
     "testing": "06_testing",
+    "live_raw": "07_live_raw",
+    "live_collect": "08_live_collect",
+    "live_feature": "09_live_features",
+    "live_throughput": "10_live_throughputs",
+    "live_plot": "11_live_plot",
     "raw_test": "10_raw",
     "collect_test": "11_collect",
     "feature_test": "12_feature",
@@ -407,7 +412,7 @@ def extract_payload(byte_field, status_type):
 # Feature Extraction
 # ----------------------------------------------------------------
 
-chunk_size = 23
+chunk_size = 179
 
 
 def get_behaviour(vehicle_speed, cruise_demand):

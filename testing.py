@@ -13,24 +13,7 @@ cwd = os.getcwd()
 test_directory = os.path.join(cwd, pu.root.get("testing"))
 
 
-class UtilityChecks(unittest.TestCase):
-    def test_extract_bytes(self):
-        test_byte_field = ["ab", "cd", "ef"]
-        self.assertEqual(pu.extract_bytes(test_byte_field, 0, 0), "")
-        self.assertEqual(pu.extract_bytes(test_byte_field, 0, 1), "ab")
-        self.assertEqual(pu.extract_bytes(test_byte_field, 0, 2), "abcd")
-        self.assertEqual(pu.extract_bytes(test_byte_field, 100, 93), "")
-        self.assertEqual(pu.extract_bytes(test_byte_field, 0, 0), "")
-
-        test_byte_field = []
-        self.assertEqual(pu.extract_bytes(test_byte_field, 0, 0), "")
-        self.assertEqual(pu.extract_bytes(test_byte_field, 0, 1), "")
-        self.assertEqual(pu.extract_bytes(test_byte_field, 0, 2), "")
-        self.assertEqual(pu.extract_bytes(test_byte_field, 100, 93), "")
-        self.assertEqual(pu.extract_bytes(test_byte_field, 0, 0), "")
-
-
-class PacketChecks(unittest.TestCase):
+class PacketTests(unittest.TestCase):
     def test_speed(self):
         file_path = os.path.join(test_directory, "valid_speed.pcapng")
         capture = ps.FileCapture(file_path, only_summaries=False)
@@ -67,7 +50,7 @@ class PacketChecks(unittest.TestCase):
         self.assertTrue(pu.check_for_valid(packet))
         capture.close()
 
-    def test_rrcpt(self):
+    def test_rrcp(self):
         file_path = os.path.join(test_directory, "rrcp.pcapng")
         capture = ps.FileCapture(file_path, only_summaries=False)
         packet = capture[0]
@@ -144,8 +127,6 @@ class PacketChecks(unittest.TestCase):
         )
         capture.close()
 
-    # ==================================================================================
-
     def test_malformed(self):
         file_path = os.path.join(test_directory, "malformed.pcapng")
         capture = ps.FileCapture(file_path, only_summaries=False)
@@ -162,7 +143,7 @@ class PacketChecks(unittest.TestCase):
         capture.close()
 
 
-class DissectorChecks(unittest.TestCase):
+class DissectorTests(unittest.TestCase):
     def test_speed_dissection(self):
         file_path = os.path.join(test_directory, "valid_speed.pcapng")
         capture = ps.FileCapture(file_path, only_summaries=False)
@@ -270,6 +251,23 @@ class DissectorChecks(unittest.TestCase):
 
         self.assertEqual(status_type, "CRUISE")
         self.assertEqual(pu.extract_payload(byte_field, status_type), 0)
+
+
+class UtilityTests(unittest.TestCase):
+    def test_extract_bytes(self):
+        test_byte_field = ["ab", "cd", "ef"]
+        self.assertEqual(pu.extract_bytes(test_byte_field, 0, 0), "")
+        self.assertEqual(pu.extract_bytes(test_byte_field, 0, 1), "ab")
+        self.assertEqual(pu.extract_bytes(test_byte_field, 0, 2), "abcd")
+        self.assertEqual(pu.extract_bytes(test_byte_field, 100, 93), "")
+        self.assertEqual(pu.extract_bytes(test_byte_field, 0, 0), "")
+
+        test_byte_field = []
+        self.assertEqual(pu.extract_bytes(test_byte_field, 0, 0), "")
+        self.assertEqual(pu.extract_bytes(test_byte_field, 0, 1), "")
+        self.assertEqual(pu.extract_bytes(test_byte_field, 0, 2), "")
+        self.assertEqual(pu.extract_bytes(test_byte_field, 100, 93), "")
+        self.assertEqual(pu.extract_bytes(test_byte_field, 0, 0), "")
 
 
 if __name__ == "__main__":
