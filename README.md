@@ -23,12 +23,7 @@ This repository contains all of the scripts required to get you started with the
 10. [`11_live_plot`](./11_live_plot) - contains plots of network activity of validation set DoS attacks.
 
 # Scripts
-1. [`attack.py`](./attack.py) -- the script used to perform a DoS attack on the hardware demonstrator. To perform this attack, the user needs to first connect a device to a free port on the switch, set itself a static IP, and then invoke the script from the terminal using a python interpreter. An example would be:
-<br />
-<br />
-`python3 attack.py`
-<br />
-<br />
+1. [`attack.py`](./attack.py) -- the script used to perform a DoS attack on the hardware demonstrator. To perform this attack, the user needs to first connect a device to a free port on the switch, set itself a static IP, and then invoke the script from the terminal using a python interpreter. An example would be: `python3 attack.py`
 2. [`collect.py`](./collect.py) -- reads in packet information from a .pcapng that has been captured by tshark, and outputs a CSV containing a time series of sniffed packets.
 3. [`feature.py`](./feature.py) - aggregates features from the time series of packets from `collect.py`, and outputs a CSV containing these features.
 4. [`plot.py`](./plot.py) - plots the monitored network activity.
