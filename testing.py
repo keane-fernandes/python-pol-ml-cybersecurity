@@ -1,7 +1,7 @@
 """"
 
 This is a python script that performs assert tests and unit tests on
-the methods in pol_utilities.py. This runs when setup.py runs.
+the methods in pol_utilities.py.
 
 """
 import pyshark as ps
