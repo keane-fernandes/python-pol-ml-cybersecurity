@@ -28,6 +28,6 @@ This repository contains all of the scripts required to get you started with the
 3. [`feature.py`](./feature.py) - aggregates features from the time series of packets from `collect.py`, and outputs a CSV containing these features.
 4. [`plot.py`](./plot.py) - plots the monitored network activity.
 5. [`automate.py`](./automate.py) - automates the collect, feature and plot modules.
-6. [`testing.py`](./test.py) - performs the unit tests, using the files stored in [`06_testing`](./06_testing)
+6. [`testing.py`](./testing.py) - performs the unit tests, using the files stored in [`06_testing`](./06_testing)
 7. [`train.py`](./train.py) - script used to evaluate the performance of the binary classifers on the training and testing sets.
 8. [`pol_utilities.py`](./pol_utilities.py) - helper methods for all of the modules.
